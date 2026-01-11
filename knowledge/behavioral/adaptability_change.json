@@ -1,0 +1,49 @@
+{
+  "id": "behavioral_adaptability_01",
+  "category": "behavioral",
+  "title": "Adaptability to Shifting Requirements",
+  "levels": ["intern", "junior", "mid"],
+  "question": "Describe a scenario where project requirements or technologies changed dramatically mid-way through development. How did you adapt?",
+  "tags": ["adaptability", "flexibility", "resilience", "learning"],
+  "rubric": [
+    {
+      "name": "situation_context",
+      "weight": 0.15,
+      "description": "Explains initial setup, nature of the shift, and immediate technical impact."
+    },
+    {
+      "name": "mindset_adaptability",
+      "weight": 0.25,
+      "description": "Demonstrates constructive attitude, agility, and openness to change."
+    },
+    {
+      "name": "technical_pivot_action",
+      "weight": 0.30,
+      "description": "Outlines concrete actions to re-architect, re-plan, or quickly learn new concepts."
+    },
+    {
+      "name": "delivery_impact",
+      "weight": 0.20,
+      "description": "Delivers a functional solution despite shifting constraints."
+    },
+    {
+      "name": "reflection",
+      "weight": 0.10,
+      "description": "Identifies lessons on modular software design for future change."
+    }
+  ],
+  "expected_signals": [
+    "Quickly assesses impact on existing codebase and schedule",
+    "Embraces learning new tools or paradigms productively",
+    "Maintains momentum and positive team attitude"
+  ],
+  "red_flags": [
+    "Complains excessively about changing business needs",
+    "Resists technical pivots due to attachment to legacy work",
+    "Fails to deliver anything functional after requirement change"
+  ],
+  "follow_up_prompts": [
+    "How did you restructure your code or architecture to accommodate the new direction efficiently?",
+    "What steps did you take to ramp up on unfamiliar tools or frameworks under time pressure?"
+  ]
+}

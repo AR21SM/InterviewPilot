@@ -1,0 +1,49 @@
+{
+  "id": "behavioral_ownership_01",
+  "category": "behavioral",
+  "title": "Ownership Under Ambiguity",
+  "levels": ["intern", "junior", "mid"],
+  "question": "Tell me about a time when you had to take ownership of an ambiguous problem without clear guidance.",
+  "tags": ["ownership", "ambiguity", "initiative", "problem-solving"],
+  "rubric": [
+    {
+      "name": "situation_context",
+      "weight": 0.15,
+      "description": "Clearly explains the ambiguous situation, key constraints, and why action was needed."
+    },
+    {
+      "name": "ownership_initiative",
+      "weight": 0.30,
+      "description": "Explicitly details individual responsibility, decision-making, and proactivity."
+    },
+    {
+      "name": "action_quality",
+      "weight": 0.25,
+      "description": "Describes concrete steps taken, structured approach, and reasoning."
+    },
+    {
+      "name": "measurable_impact",
+      "weight": 0.20,
+      "description": "Provides quantitative or clear qualitative outcomes and impact."
+    },
+    {
+      "name": "reflection",
+      "weight": 0.10,
+      "description": "Demonstrates self-awareness and lessons learned for future situations."
+    }
+  ],
+  "expected_signals": [
+    "Distinguishes personal contribution from general team effort",
+    "Explains decision framework under uncertainty",
+    "Highlights concrete outcome or impact metrics"
+  ],
+  "red_flags": [
+    "Blames team members or leadership for ambiguity",
+    "Describes passive waiting for instructions",
+    "Gives generic statements without concrete personal actions"
+  ],
+  "follow_up_prompts": [
+    "What specific decision did you make that had the greatest impact on the outcome?",
+    "Looking back, what risk did you take, and how would you mitigate it differently now?"
+  ]
+}

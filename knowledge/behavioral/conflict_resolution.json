@@ -1,0 +1,49 @@
+{
+  "id": "behavioral_conflict_01",
+  "category": "behavioral",
+  "title": "Technical Conflict Resolution",
+  "levels": ["intern", "junior", "mid"],
+  "question": "Describe a situation where you had a strong technical disagreement with a peer or teammate. How did you resolve it?",
+  "tags": ["conflict", "communication", "teamwork", "collaboration"],
+  "rubric": [
+    {
+      "name": "situation_context",
+      "weight": 0.15,
+      "description": "Explains the technical context and why the disagreement arose."
+    },
+    {
+      "name": "communication_empathy",
+      "weight": 0.30,
+      "description": "Demonstrates active listening, respect for alternative viewpoints, and objective evaluation."
+    },
+    {
+      "name": "resolution_action",
+      "weight": 0.25,
+      "description": "Describes data-driven or consensus-building steps taken to resolve the dispute."
+    },
+    {
+      "name": "project_outcome",
+      "weight": 0.20,
+      "description": "Details the final technical outcome and impact on team dynamics."
+    },
+    {
+      "name": "reflection",
+      "weight": 0.10,
+      "description": "Reflects on personal communication style and working relationship outcomes."
+    }
+  ],
+  "expected_signals": [
+    "Uses data, benchmarks, or prototypes to evaluate options objectively",
+    "Focuses on shared team goal rather than personal victory",
+    "Maintains professional empathy and constructive dialogue"
+  ],
+  "red_flags": [
+    "Escalates to management without attempting peer dialogue",
+    "Dismisses opposing technical opinions out of hand",
+    "Remains passive and yields without discussing trade-offs"
+  ],
+  "follow_up_prompts": [
+    "How did you ensure the working relationship remained healthy after the decision?",
+    "If new data contradicted your initial preference, how did you adjust your position?"
+  ]
+}

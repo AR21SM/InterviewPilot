@@ -1,0 +1,49 @@
+{
+  "id": "behavioral_collaboration_01",
+  "category": "behavioral",
+  "title": "Cross-Functional Collaboration",
+  "levels": ["intern", "junior", "mid"],
+  "question": "Tell me about a project where you partnered closely with non-engineering stakeholders (e.g. Product, Design, or QA). How did you ensure alignment?",
+  "tags": ["collaboration", "cross-functional", "communication", "alignment"],
+  "rubric": [
+    {
+      "name": "situation_context",
+      "weight": 0.15,
+      "description": "Explains team structure, goal, and varied domain perspectives."
+    },
+    {
+      "name": "bridging_communication",
+      "weight": 0.30,
+      "description": "Translates complex technical details into clear non-technical business concepts."
+    },
+    {
+      "name": "collaborative_action",
+      "weight": 0.25,
+      "description": "Describes co-designing solutions, establishing feedback loops, and balancing priorities."
+    },
+    {
+      "name": "project_outcome",
+      "weight": 0.20,
+      "description": "Achieves shared business goals and successful product feature launch."
+    },
+    {
+      "name": "reflection",
+      "weight": 0.10,
+      "description": "Reflects on building empathy across functional disciplines."
+    }
+  ],
+  "expected_signals": [
+    "Adapts communication style depending on stakeholder background",
+    "Explains technical constraints without being dismissive",
+    "Establishes clear contracts and review checkpoints"
+  ],
+  "red_flags": [
+    "Uses dense jargon to baffle non-technical partners",
+    "Views product or design input as interference",
+    "Works in a silo until final release"
+  ],
+  "follow_up_prompts": [
+    "How did you explain a hard technical constraint to product managers when they asked for an infeasible deadline?",
+    "How did you validate that non-technical partners truly understood the trade-offs?"
+  ]
+}

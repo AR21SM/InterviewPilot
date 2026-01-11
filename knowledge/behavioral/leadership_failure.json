@@ -1,0 +1,49 @@
+{
+  "id": "behavioral_failure_01",
+  "category": "behavioral",
+  "title": "Handling Failure and Accountability",
+  "levels": ["intern", "junior", "mid"],
+  "question": "Tell me about a time when a project or feature you worked on failed or did not meet expectations. How did you handle it?",
+  "tags": ["failure", "accountability", "reflection", "resilience"],
+  "rubric": [
+    {
+      "name": "situation_context",
+      "weight": 0.15,
+      "description": "Sets up the project context, expectations, and root cause of failure."
+    },
+    {
+      "name": "ownership_accountability",
+      "weight": 0.30,
+      "description": "Takes direct personal responsibility without shifting blame."
+    },
+    {
+      "name": "corrective_action",
+      "weight": 0.25,
+      "description": "Explains immediate remediation steps and post-mortem actions."
+    },
+    {
+      "name": "measurable_recovery",
+      "weight": 0.15,
+      "description": "Shows how the team recovered or stabilized the system."
+    },
+    {
+      "name": "learning_growth",
+      "weight": 0.15,
+      "description": "Highlights long-term systemic changes or personal learnings applied since."
+    }
+  ],
+  "expected_signals": [
+    "Transparently acknowledges mistakes or oversights",
+    "Conducts structured blameless root-cause analysis",
+    "Implements preventive measures (e.g. tests, monitoring, safeguards)"
+  ],
+  "red_flags": [
+    "Blames external factors, bad requirements, or colleagues",
+    "Downplays severity or pretends failure had no consequence",
+    "Fails to articulate any actionable lesson learned"
+  ],
+  "follow_up_prompts": [
+    "What safeguard or process did you put in place to prevent that failure from happening again?",
+    "How did you communicate the failure and recovery to stakeholders?"
+  ]
+}

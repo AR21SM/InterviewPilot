@@ -1,0 +1,49 @@
+{
+  "id": "behavioral_prioritization_01",
+  "category": "behavioral",
+  "title": "Prioritization Under Deadline Pressure",
+  "levels": ["intern", "junior", "mid"],
+  "question": "Tell me about a time you had competing high-priority tasks with tight deadlines. How did you decide what to focus on?",
+  "tags": ["prioritization", "time-management", "tradeoffs", "execution"],
+  "rubric": [
+    {
+      "name": "situation_context",
+      "weight": 0.15,
+      "description": "Explains competing demands, stakeholders, and time constraints."
+    },
+    {
+      "name": "prioritization_framework",
+      "weight": 0.30,
+      "description": "Details systematic framework used to evaluate urgency vs impact."
+    },
+    {
+      "name": "stakeholder_communication",
+      "weight": 0.25,
+      "description": "Communicates trade-offs, expectations, and scope adjustments proactively."
+    },
+    {
+      "name": "execution_result",
+      "weight": 0.20,
+      "description": "Delivers core priorities on time while maintaining quality."
+    },
+    {
+      "name": "reflection",
+      "weight": 0.10,
+      "description": "Reflects on workflow improvements to prevent deadline crunches."
+    }
+  ],
+  "expected_signals": [
+    "Uses structured criteria (e.g. user impact, business value, technical risk)",
+    "Communicates early with stakeholders about re-scoped deliverables",
+    "Avoids burnout by setting clear technical boundaries"
+  ],
+  "red_flags": [
+    "Tries to do everything poorly without setting expectations",
+    "Silently drops tasks without informing stakeholders",
+    "Fails to explain rationale behind prioritization choices"
+  ],
+  "follow_up_prompts": [
+    "How did you handle pushback from stakeholders whose tasks were deprioritized?",
+    "What criteria did you use to distinguish critical scope from nice-to-have features?"
+  ]
+}
