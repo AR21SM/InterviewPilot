@@ -1,0 +1,49 @@
+{
+  "id": "system_design_chat_01",
+  "category": "system_design",
+  "title": "Real-time Chat Messaging Application",
+  "levels": ["junior", "mid"],
+  "question": "Design a real-time messaging system like WhatsApp or Slack. How do you handle 1-on-1 and group chats, message delivery status, and offline storage?",
+  "tags": ["system-design", "chat", "websockets", "presence", "cassandra"],
+  "rubric": [
+    {
+      "name": "requirements_functional",
+      "weight": 0.15,
+      "description": "Clarifies 1-on-1 vs group chat scale, media attachments, online presence, and message receipt status (sent/delivered/read)."
+    },
+    {
+      "name": "realtime_connection_architecture",
+      "weight": 0.30,
+      "description": "Uses WebSockets / long polling managed by a dedicated WebSocket Gateway cluster with service registry."
+    },
+    {
+      "name": "message_storage_data_model",
+      "weight": 0.25,
+      "description": "Selects write-heavy NoSQL database (e.g. Cassandra or HBase) partitioned by `channel_id` / `chat_id` and ordered by `message_id` (Snowflake)."
+    },
+    {
+      "name": "push_offline_delivery",
+      "weight": 0.15,
+      "description": "Handles offline users via push notifications and syncs unread messages upon client reconnection."
+    },
+    {
+      "name": "scalability_tradeoffs",
+      "weight": 0.15,
+      "description": "Addresses group chat fan-out issues, presence heartbeats, and message sequencing."
+    }
+  ],
+  "expected_signals": [
+    "Chooses WebSockets for bi-directional persistent connections",
+    "Uses distributed ID generator (e.g. Snowflake) for monotonic message ordering",
+    "Distinguishes online WebSocket delivery from offline push notification fallback"
+  ],
+  "red_flags": [
+    "Uses client HTTP polling every second for real-time messaging",
+    "Relies on auto-increment SQL primary key for distributed multi-datacenter ordering",
+    "Ignores fan-out challenge for large group chats"
+  ],
+  "follow_up_prompts": [
+    "How would you generate globally unique, chronological message IDs across multiple chat servers?",
+    "How do you track user online status efficiently without overloading the database with heartbeats?"
+  ]
+}

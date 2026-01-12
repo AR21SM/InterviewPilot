@@ -1,0 +1,49 @@
+{
+  "id": "system_design_crawler_01",
+  "category": "system_design",
+  "title": "Distributed Web Crawler",
+  "levels": ["junior", "mid"],
+  "question": "Design a distributed web crawler that fetches billions of web pages. How do you handle URL politeness, deduplication, and scaling?",
+  "tags": ["system-design", "crawler", "bfs", "bloom-filter", "politeness"],
+  "rubric": [
+    {
+      "name": "requirements_scale",
+      "weight": 0.15,
+      "description": "Estimates throughput (pages/sec), storage per page, and freshness update frequency."
+    },
+    {
+      "name": "frontier_politeness_design",
+      "weight": 0.30,
+      "description": "Architects URL Frontier with host-based delay queues to respect `robots.txt` and prevent DDoS on target sites."
+    },
+    {
+      "name": "deduplication_storage",
+      "weight": 0.25,
+      "description": "Uses Bloom Filters or Fingerprinting (SimHash) for URL and content duplicate detection."
+    },
+    {
+      "name": "distributed_worker_scaling",
+      "weight": 0.15,
+      "description": "Scales worker nodes, handles worker crashes, DNS resolution caching, and HTML parser isolation."
+    },
+    {
+      "name": "observability_monitoring",
+      "weight": 0.15,
+      "description": "Monitors dead links, trap cycles (infinite dynamic URLs), spider traps, and network errors."
+    }
+  ],
+  "expected_signals": [
+    "Explains URL Frontier with FIFO queue + host queue for politeness",
+    "Uses Bloom Filter for fast URL deduplication in memory",
+    "Caches DNS queries locally to prevent DNS bottleneck"
+  ],
+  "red_flags": [
+    "Crawls target servers continuously without delay or robots.txt compliance",
+    "Uses relational DB lookup for every single URL duplicate check",
+    "Ignores spider traps (infinite calendar pages)"
+  ],
+  "follow_up_prompts": [
+    "How do you detect and break out of infinite spider traps like dynamically generated calendar links?",
+    "How would you store and update web page checksums for duplicate content detection?"
+  ]
+}

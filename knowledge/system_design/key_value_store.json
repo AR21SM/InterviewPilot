@@ -1,0 +1,49 @@
+{
+  "id": "system_design_kv_store_01",
+  "category": "system_design",
+  "title": "Distributed Key-Value Store",
+  "levels": ["mid"],
+  "question": "Design a distributed, highly available Key-Value store similar to Amazon DynamoDB or Cassandra. How do you handle partitioning, replication, and consistency?",
+  "tags": ["system-design", "kv-store", "consistent-hashing", "quorum", "cap-theorem"],
+  "rubric": [
+    {
+      "name": "requirements_cap_tradeoff",
+      "weight": 0.15,
+      "description": "Establishes data size, latency SLA, and explicitly chooses AP (eventual consistency) or CP system based on CAP theorem."
+    },
+    {
+      "name": "partitioning_hashing",
+      "weight": 0.25,
+      "description": "Uses Consistent Hashing with virtual nodes to distribute key space evenly and enable easy node additions/removals."
+    },
+    {
+      "name": "replication_consistency",
+      "weight": 0.25,
+      "description": "Configures configurable Quorum (N, R, W) where `R + W > N` for strong consistency or `R + W <= N` for eventual consistency."
+    },
+    {
+      "name": "conflict_resolution",
+      "weight": 0.20,
+      "description": "Uses Vector Clocks / Version Trees or Last-Write-Wins (LWW) for concurrent update conflict resolution."
+    },
+    {
+      "name": "failure_handling_storage",
+      "weight": 0.15,
+      "description": "Handles node failure via Sloppy Quorum + Hinted Handoff, Read Repair, and LSM-tree (SSTables) for fast disk writes."
+    }
+  ],
+  "expected_signals": [
+    "Explains Consistent Hashing with virtual nodes to prevent hot spots",
+    "Uses Configurable Quorum (N, R, W) to tune read/write consistency",
+    "Explains LSM-tree (MemTable + WAL + SSTable) for high write performance"
+  ],
+  "red_flags": [
+    "Uses modulo hashing `hash(key) % N` causing massive data reshuffling on server changes",
+    "Ignores network partitions or assumes instant global synchronization",
+    "Fails to explain conflict resolution when concurrent writes occur"
+  ],
+  "follow_up_prompts": [
+    "What is the impact on read latency if you set Read Quorum R=1 vs R=3 in a 3-replica cluster?",
+    "How does a Gossip protocol assist nodes in discovering cluster membership changes?"
+  ]
+}

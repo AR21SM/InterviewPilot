@@ -1,0 +1,49 @@
+{
+  "id": "system_design_url_shortener_01",
+  "category": "system_design",
+  "title": "URL Shortening Service (TinyURL)",
+  "levels": ["intern", "junior", "mid"],
+  "question": "Design a scalable URL shortener service like TinyURL. Walk through the read/write scale, encoding strategy, database schema, and caching layer.",
+  "tags": ["system-design", "url-shortener", "base62", "hashing", "caching"],
+  "rubric": [
+    {
+      "name": "requirements_capacity",
+      "weight": 0.15,
+      "description": "Calculates read/write ratio (100:1), storage needs for 500M URLs/month, and URL length requirements (7 chars Base62)."
+    },
+    {
+      "name": "encoding_generation_logic",
+      "weight": 0.25,
+      "description": "Compares MD5/SHA256 truncation vs auto-increment ID + Base62 conversion or unique key generator service (KGS)."
+    },
+    {
+      "name": "data_storage_decisions",
+      "weight": 0.25,
+      "description": "Selects NoSQL key-value store (e.g. Cassandra or DynamoDB) or relational DB with clean indexing."
+    },
+    {
+      "name": "caching_scalability",
+      "weight": 0.20,
+      "description": "Adds Redis caching layer following 80/20 hot URL rule and HTTP 301 vs 302 redirect trade-offs."
+    },
+    {
+      "name": "tradeoffs_failure_modes",
+      "weight": 0.15,
+      "description": "Discusses 301 (Permanent, browser cached, less analytics) vs 302 (Temporary, hits server, trackable)."
+    }
+  ],
+  "expected_signals": [
+    "Explains Base62 encoding capability (62^7 = ~3.5 trillion URLs)",
+    "Addresses hash collision handling or uses a Key Generation Service (KGS)",
+    "Explains HTTP 301 (browser cache redirect) vs HTTP 302 (server hit for click analytics) trade-off"
+  ],
+  "red_flags": [
+    "Uses simple random hash without checking collisions",
+    "Fails to estimate storage or throughput numbers",
+    "Uses un-indexed relational table for high read traffic"
+  ],
+  "follow_up_prompts": [
+    "How would you prevent malicious users from spamming your system with millions of fake links?",
+    "If key analytics (click counts, geo, referrer) must be collected, how would you process them without slowing down the read path?"
+  ]
+}

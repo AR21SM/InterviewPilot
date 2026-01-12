@@ -1,0 +1,49 @@
+{
+  "id": "system_design_rate_limiter_01",
+  "category": "system_design",
+  "title": "Distributed Rate Limiter",
+  "levels": ["junior", "mid"],
+  "question": "Design a scalable distributed rate limiter service to protect an API gateway handling 100,000 requests per second. How would you architect this?",
+  "tags": ["system-design", "rate-limiter", "redis", "token-bucket", "scalability"],
+  "rubric": [
+    {
+      "name": "requirements_clarification",
+      "weight": 0.15,
+      "description": "Clarifies throughput (RPS), algorithm rules (token bucket vs sliding window log), client identification (IP vs User ID), and response handling (HTTP 429)."
+    },
+    {
+      "name": "high_level_architecture",
+      "weight": 0.25,
+      "description": "Proposes API gateway middleware with centralized cache (e.g. Redis cluster) and atomic operations."
+    },
+    {
+      "name": "data_storage_decisions",
+      "weight": 0.20,
+      "description": "Selects in-memory storage (Redis) with Lua scripting or sliding window counters to eliminate race conditions."
+    },
+    {
+      "name": "scalability_reliability",
+      "weight": 0.20,
+      "description": "Addresses distributed race conditions, cache cluster sharding, replication, and fail-open vs fail-close trade-offs."
+    },
+    {
+      "name": "observability_tradeoffs",
+      "weight": 0.20,
+      "description": "Discusses metrics, alert thresholds, latency overhead, and gracefully handling Redis outage."
+    }
+  ],
+  "expected_signals": [
+    "Compares algorithms (Token Bucket, Leaky Bucket, Fixed Window, Sliding Window Counter)",
+    "Identifies race conditions in multi-threaded/distributed rate limit checks and uses Redis Lua script / INCR",
+    "Explicitly chooses fail-open (allow traffic with warning) vs fail-close (block traffic) policy during storage downtime"
+  ],
+  "red_flags": [
+    "Stores rate limit counters in relational disk DB (e.g. Postgres) introducing prohibitive read/write disk latency",
+    "Ignores race conditions between read-and-update counter steps",
+    "Fails to specify client identifier or location of rate limiter (client vs gateway vs app server)"
+  ],
+  "follow_up_prompts": [
+    "What happens when the central Redis cluster experiences a network partition? Would you fail open or fail closed?",
+    "How would you prevent hot keys when a single viral user generates millions of requests?"
+  ]
+}

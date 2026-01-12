@@ -1,0 +1,49 @@
+{
+  "id": "system_design_notification_01",
+  "category": "system_design",
+  "title": "Scalable Push Notification System",
+  "levels": ["junior", "mid"],
+  "question": "Design a push notification system capable of sending millions of notifications daily across iOS, Android, SMS, and Email. How would you structure this system?",
+  "tags": ["system-design", "notifications", "queues", "decoupling", "retry-logic"],
+  "rubric": [
+    {
+      "name": "requirements_scope",
+      "weight": 0.15,
+      "description": "Clarifies notification channels, latency guarantees, rate limiting, and user preference management."
+    },
+    {
+      "name": "architecture_decoupling",
+      "weight": 0.30,
+      "description": "Uses message queues (e.g. RabbitMQ/Kafka) to decouple notification triggers from third-party delivery providers (APNS, FCM, Twilio, SendGrid)."
+    },
+    {
+      "name": "data_user_settings",
+      "weight": 0.20,
+      "description": "Designs schema for user devices, channel tokens, opt-out preferences, and template management."
+    },
+    {
+      "name": "reliability_deduplication",
+      "weight": 0.20,
+      "description": "Implements idempotent notification sending, dead-letter queues (DLQ), and exponential backoff retries."
+    },
+    {
+      "name": "observability_operations",
+      "weight": 0.15,
+      "description": "Tracks delivery success rate, queue lag, provider errors, and opt-out analytics."
+    }
+  ],
+  "expected_signals": [
+    "Uses asynchronous message queues to prevent web request blocking",
+    "Addresses third-party provider failure with retries, exponential backoff, and dead-letter queues",
+    "Ensures idempotence via message IDs to prevent duplicate user notifications"
+  ],
+  "red_flags": [
+    "Makes synchronous HTTP calls to third-party providers (APNS/FCM) directly in API request handler",
+    "Lacks mechanism to handle user unsubscribe or rate limiting",
+    "Fails to address duplicate notification prevention"
+  ],
+  "follow_up_prompts": [
+    "How would you ensure that a user does not receive the same push notification twice if the network drops right after APNS receives it?",
+    "How would you handle priority routing when critical security alerts compete with marketing emails?"
+  ]
+}
