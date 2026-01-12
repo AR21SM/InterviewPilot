@@ -1,0 +1,49 @@
+{
+  "id": "technical_lca_01",
+  "category": "technical",
+  "title": "Lowest Common Ancestor in Binary Tree",
+  "levels": ["intern", "junior", "mid"],
+  "question": "How would you find the Lowest Common Ancestor (LCA) of two target nodes p and q in a Binary Tree (not necessarily a Binary Search Tree)?",
+  "tags": ["dsa", "tree", "binary-tree", "dfs", "recursion"],
+  "rubric": [
+    {
+      "name": "problem_clarification",
+      "weight": 0.15,
+      "description": "Clarifies node guarantees (are p and q guaranteed to exist?), tree structure, and node parent pointer existence."
+    },
+    {
+      "name": "algorithmic_reasoning",
+      "weight": 0.30,
+      "description": "Explains post-order DFS traversal returning non-null when target is found and returning current node when both subtrees match."
+    },
+    {
+      "name": "time_space_complexity",
+      "weight": 0.25,
+      "description": "Derives O(N) time complexity for visiting tree nodes and O(H) space complexity for call stack (H=height)."
+    },
+    {
+      "name": "edge_case_handling",
+      "weight": 0.15,
+      "description": "Handles case where p is ancestor of q, single-node tree, or targets at opposite tree ends."
+    },
+    {
+      "name": "communication_clarity",
+      "weight": 0.15,
+      "description": "Walks through recursive return values clearly."
+    }
+  ],
+  "expected_signals": [
+    "Uses recursive DFS post-order traversal to bubble up found targets",
+    "Explains why LCA is reached when left and right subtree calls both return non-null",
+    "Correctly notes O(H) recursion stack space, bounded by O(N) in skewed tree"
+  ],
+  "red_flags": [
+    "Assumes tree is a BST and attempts value comparison `p.val < root.val` without checking tree type",
+    "Stores entire root-to-node paths unnecessarily without recognizing O(1) extra space post-order optimization",
+    "Fails to handle when target node is ancestor of the other"
+  ],
+  "follow_up_prompts": [
+    "How would your algorithm simplify if the tree was guaranteed to be a Binary Search Tree (BST)?",
+    "What if each node had a pointer to its parent node? How would you solve it then?"
+  ]
+}

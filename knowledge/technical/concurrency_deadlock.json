@@ -1,0 +1,49 @@
+{
+  "id": "technical_deadlock_01",
+  "category": "technical",
+  "title": "Concurrency and Deadlock Prevention",
+  "levels": ["junior", "mid"],
+  "question": "What are the four necessary conditions for a deadlock to occur in a multithreaded application, and how would you prevent or resolve deadlocks?",
+  "tags": ["concurrency", "threading", "deadlock", "locks", "operating-systems"],
+  "rubric": [
+    {
+      "name": "problem_clarification",
+      "weight": 0.15,
+      "description": "Clarifies shared resources, lock granularity, and threading model."
+    },
+    {
+      "name": "theoretical_correctness",
+      "weight": 0.30,
+      "description": "Correctly names and explains Mutual Exclusion, Hold and Wait, No Preemption, and Circular Wait."
+    },
+    {
+      "name": "prevention_strategies",
+      "weight": 0.25,
+      "description": "Details concrete prevention methods: strict lock ordering, lock timeouts, lock-free structures, or fine-grained scoping."
+    },
+    {
+      "name": "practical_example",
+      "weight": 0.15,
+      "description": "Provides realistic code or scenario example (e.g. transfer between two bank accounts)."
+    },
+    {
+      "name": "communication_clarity",
+      "weight": 0.15,
+      "description": "Explains thread execution timelines and race conditions concisely."
+    }
+  ],
+  "expected_signals": [
+    "Identifies lock acquisition order as primary practical defense against Circular Wait",
+    "Mentions tryLock with timeout as defensive pattern",
+    "Distinguishes deadlock from starvation or livelock"
+  ],
+  "red_flags": [
+    "Cannot state the Coffman deadlock conditions",
+    "Suggests removing locks altogether without addressing data races",
+    "Confuses deadlock with simple CPU thrashing"
+  ],
+  "follow_up_prompts": [
+    "In a bank account transfer function where account A locks account B and vice versa, how would you enforce global lock ordering?",
+    "What is livelock, and how does it differ from deadlock?"
+  ]
+}

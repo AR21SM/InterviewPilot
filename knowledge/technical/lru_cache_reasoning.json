@@ -1,0 +1,49 @@
+{
+  "id": "technical_lru_cache_01",
+  "category": "technical",
+  "title": "LRU Cache Data Structure Selection",
+  "levels": ["intern", "junior", "mid"],
+  "question": "How would you design an LRU (Least Recently Used) cache with O(1) time complexity for get and put operations? Walk me through your data structure choices and trade-offs.",
+  "tags": ["dsa", "data-structures", "cache", "hashmap", "doubly-linked-list"],
+  "rubric": [
+    {
+      "name": "problem_clarification",
+      "weight": 0.15,
+      "description": "Clarifies capacity constraints, concurrency requirements, and expected key/value types."
+    },
+    {
+      "name": "data_structure_choice",
+      "weight": 0.30,
+      "description": "Identifies Hash Map + Doubly Linked List combination and explains why single structures fail O(1) requirement."
+    },
+    {
+      "name": "time_space_complexity",
+      "weight": 0.25,
+      "description": "Correctly derives O(1) time for get/put and O(capacity) auxiliary space complexity."
+    },
+    {
+      "name": "edge_case_handling",
+      "weight": 0.15,
+      "description": "Addresses capacity=1, key updating existing item, evicted node pointers, and missing key handling."
+    },
+    {
+      "name": "communication_clarity",
+      "weight": 0.15,
+      "description": "Communicates pointer manipulation and algorithmic steps verbally in a structured way."
+    }
+  ],
+  "expected_signals": [
+    "Explains why Hash Map provides O(1) lookup but lacks insertion order tracking",
+    "Explains why Doubly Linked List enables O(1) removal/insertion of nodes",
+    "Uses dummy head/tail nodes to simplify edge pointer logic"
+  ],
+  "red_flags": [
+    "Suggests array or single LinkedList yielding O(N) search or deletion",
+    "Confuses LRU eviction policy with LFU or FIFO",
+    "Fails to state space complexity correctly"
+  ],
+  "follow_up_prompts": [
+    "Why does a singly linked list fail to provide O(1) node removal even if you hold a pointer to the target node?",
+    "How would you adapt this design if multiple threads accessed the cache concurrently?"
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "id": "technical_graph_cycle_01",
+  "category": "technical",
+  "title": "Graph Cycle Detection and Topological Sort",
+  "levels": ["junior", "mid"],
+  "question": "How would you detect if a directed graph contains a cycle (for instance, detecting circular dependencies in a build system)? Explain the algorithm.",
+  "tags": ["dsa", "graph", "dfs", "topological-sort", "kahns-algorithm"],
+  "rubric": [
+    {
+      "name": "problem_clarification",
+      "weight": 0.15,
+      "description": "Clarifies directed vs undirected graph, disconnected components, and graph representation (adjacency list)."
+    },
+    {
+      "name": "algorithmic_choice",
+      "weight": 0.30,
+      "description": "Explains DFS with 3-color visiting state (unvisited, visiting, visited) or Kahn's algorithm (indegrees)."
+    },
+    {
+      "name": "time_space_complexity",
+      "weight": 0.25,
+      "description": "States O(V + E) time and O(V + E) space for adjacency list and recursion/indegree tracking."
+    },
+    {
+      "name": "edge_case_handling",
+      "weight": 0.15,
+      "description": "Addresses disconnected subgraphs, self-loops, and empty graphs."
+    },
+    {
+      "name": "communication_clarity",
+      "weight": 0.15,
+      "description": "Articulates call stack traversal or queue processing step-by-step."
+    }
+  ],
+  "expected_signals": [
+    "Explains why simple visited boolean set is insufficient for directed graph cycle detection",
+    "Uses recursion stack set / visiting state for DFS or indegree counting for BFS (Kahn's)",
+    "Ensures all vertices are checked to cover disconnected components"
+  ],
+  "red_flags": [
+    "Uses undirected graph cycle detection logic (simple visited parent check) on directed graph",
+    "Fails to handle disconnected components",
+    "Provides incorrect complexity, e.g. O(V * E)"
+  ],
+  "follow_up_prompts": [
+    "If a cycle is detected, how would you print the exact vertices participating in that circular dependency?",
+    "How does Kahn's algorithm (BFS indegree method) differ from DFS when building a build order sequence?"
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "id": "technical_binary_search_01",
+  "category": "technical",
+  "title": "Search in Rotated Sorted Array",
+  "levels": ["intern", "junior", "mid"],
+  "question": "Given an integer array sorted in ascending order that has been rotated at an unknown pivot, how would you search for a target value in O(log N) time?",
+  "tags": ["dsa", "binary-search", "arrays", "complexity"],
+  "rubric": [
+    {
+      "name": "problem_clarification",
+      "weight": 0.15,
+      "description": "Clarifies duplicate element existence, array boundaries, and return value for missing targets."
+    },
+    {
+      "name": "algorithmic_reasoning",
+      "weight": 0.30,
+      "description": "Identifies that one half of array must remain strictly sorted at any midpoint and uses this property to prune search space."
+    },
+    {
+      "name": "time_space_complexity",
+      "weight": 0.25,
+      "description": "Explains why target search takes O(log N) time and O(1) space iteratively."
+    },
+    {
+      "name": "edge_case_handling",
+      "weight": 0.15,
+      "description": "Handles single-element array, array rotated 0 times, and duplicates (if mentioned)."
+    },
+    {
+      "name": "communication_clarity",
+      "weight": 0.15,
+      "description": "Walks through binary search boundary adjustments step-by-step."
+    }
+  ],
+  "expected_signals": [
+    "Checks whether left half `nums[low] <= nums[mid]` is sorted before determining target bounds",
+    "Derives correct index updates for `low` and `high`",
+    "Avoids fallback to linear scan"
+  ],
+  "red_flags": [
+    "Proposes O(N) linear search without recognizing binary search potential",
+    "Fails to handle pivot boundary condition correctly",
+    "Ignores integer overflow when calculating midpoint in certain languages"
+  ],
+  "follow_up_prompts": [
+    "How does the time complexity change if the array contains duplicate values?",
+    "How would you find the pivot index itself (the minimum element) in O(log N) time?"
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "id": "technical_top_k_01",
+  "category": "technical",
+  "title": "Top K Frequent Elements",
+  "levels": ["intern", "junior", "mid"],
+  "question": "Given an integer array, how would you find the k most frequent elements? Compare different approaches and their time complexities.",
+  "tags": ["dsa", "heap", "hashmap", "bucket-sort", "complexity"],
+  "rubric": [
+    {
+      "name": "problem_clarification",
+      "weight": 0.15,
+      "description": "Asks about value ranges, k bound relative to unique elements, and tie-breaking requirements."
+    },
+    {
+      "name": "algorithmic_tradeoffs",
+      "weight": 0.30,
+      "description": "Compares Hash Map + Min-Heap O(N log k) vs Bucket Sort O(N) approaches clearly."
+    },
+    {
+      "name": "time_space_complexity",
+      "weight": 0.25,
+      "description": "Correctly states frequency map building O(N), heap operations O(N log k), and space O(N)."
+    },
+    {
+      "name": "edge_case_handling",
+      "weight": 0.15,
+      "description": "Handles k equal to unique count, k=1, and empty/single-element arrays."
+    },
+    {
+      "name": "communication_clarity",
+      "weight": 0.15,
+      "description": "Explains why a min-heap of size k is preferable to sorting all elements O(N log N)."
+    }
+  ],
+  "expected_signals": [
+    "Identifies frequency counting via HashMap as mandatory first step",
+    "Uses Min-Heap of size K to maintain top K elements efficiently",
+    "Proposes Bucket Sort (frequency indexing) for linear O(N) time optimization"
+  ],
+  "red_flags": [
+    "Sorts the entire N elements costing O(N log N) without mentioning heap or bucket sort",
+    "Uses Max-Heap of size N costing extra memory and unnecessary log N operations",
+    "Forgets to account for HashMap creation overhead in time complexity"
+  ],
+  "follow_up_prompts": [
+    "Under what memory constraints would Bucket Sort become less attractive than a size-K Min-Heap?",
+    "How would you handle a streaming input where new elements arrive continuously?"
+  ]
+}
