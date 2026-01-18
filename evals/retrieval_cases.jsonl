@@ -1,0 +1,35 @@
+{"query": "tell me about a time you took ownership of an ambiguous problem", "category": "behavioral", "level": "mid", "expected_card_ids": ["behavioral_ownership_01"]}
+{"query": "unclear requirements taking initiative without guidance", "category": "behavioral", "level": "junior", "expected_card_ids": ["behavioral_ownership_01"]}
+{"query": "how do you resolve technical disagreements with a team member", "category": "behavioral", "level": "mid", "expected_card_ids": ["behavioral_conflict_01"]}
+{"query": "conflict resolution with peer engineer over technical decision", "category": "behavioral", "level": "intern", "expected_card_ids": ["behavioral_conflict_01"]}
+{"query": "project failure post-mortem taking accountability for mistakes", "category": "behavioral", "level": "mid", "expected_card_ids": ["behavioral_failure_01"]}
+{"query": "handled a mistake or system outage under your watch", "category": "behavioral", "level": "junior", "expected_card_ids": ["behavioral_failure_01"]}
+{"query": "prioritizing competing high priority deadlines", "category": "behavioral", "level": "mid", "expected_card_ids": ["behavioral_prioritization_01"]}
+{"query": "tight deadline trade offs re-scoping deliverables", "category": "behavioral", "level": "intern", "expected_card_ids": ["behavioral_prioritization_01"]}
+{"query": "adapting to sudden requirement changes mid sprint", "category": "behavioral", "level": "mid", "expected_card_ids": ["behavioral_adaptability_01"]}
+{"query": "learning new tools quickly after pivot", "category": "behavioral", "level": "junior", "expected_card_ids": ["behavioral_adaptability_01"]}
+{"query": "collaborating with product manager and design team", "category": "behavioral", "level": "mid", "expected_card_ids": ["behavioral_collaboration_01"]}
+{"query": "explaining technical constraints to non technical stakeholders", "category": "behavioral", "level": "junior", "expected_card_ids": ["behavioral_collaboration_01"]}
+{"query": "design an LRU cache with O(1) time complexity", "category": "technical", "level": "mid", "expected_card_ids": ["technical_lru_cache_01"]}
+{"query": "hashmap and doubly linked list caching strategy", "category": "technical", "level": "junior", "expected_card_ids": ["technical_lru_cache_01"]}
+{"query": "search in rotated sorted array in logarithmic time", "category": "technical", "level": "mid", "expected_card_ids": ["technical_binary_search_01"]}
+{"query": "binary search pivot point in array", "category": "technical", "level": "intern", "expected_card_ids": ["technical_binary_search_01"]}
+{"query": "top k frequent elements heap vs bucket sort", "category": "technical", "level": "mid", "expected_card_ids": ["technical_top_k_01"]}
+{"query": "frequency counting min heap size K", "category": "technical", "level": "junior", "expected_card_ids": ["technical_top_k_01"]}
+{"query": "detect cycle in directed graph build dependencies", "category": "technical", "level": "mid", "expected_card_ids": ["technical_graph_cycle_01"]}
+{"query": "Kahn algorithm topological sort cycle detection", "category": "technical", "level": "junior", "expected_card_ids": ["technical_graph_cycle_01"]}
+{"query": "four conditions for deadlock in multithreaded application", "category": "technical", "level": "mid", "expected_card_ids": ["technical_deadlock_01"]}
+{"query": "circular wait lock ordering lock timeouts", "category": "technical", "level": "junior", "expected_card_ids": ["technical_deadlock_01"]}
+{"query": "lowest common ancestor in binary tree recursive DFS", "category": "technical", "level": "mid", "expected_card_ids": ["technical_lca_01"]}
+{"query": "LCA target nodes bubbling up in binary tree", "category": "technical", "level": "intern", "expected_card_ids": ["technical_lca_01"]}
+{"query": "design distributed rate limiter service 100k RPS", "category": "system_design", "level": "mid", "expected_card_ids": ["system_design_rate_limiter_01"]}
+{"query": "token bucket sliding window redis API gateway protection", "category": "system_design", "level": "junior", "expected_card_ids": ["system_design_rate_limiter_01"]}
+{"query": "design URL shortener like TinyURL base62 encoding", "category": "system_design", "level": "junior", "expected_card_ids": ["system_design_url_shortener_01"]}
+{"query": "short URL generator key generation service HTTP 301 vs 302", "category": "system_design", "level": "mid", "expected_card_ids": ["system_design_url_shortener_01"]}
+{"query": "scalable push notification system APNS FCM message queues", "category": "system_design", "level": "mid", "expected_card_ids": ["system_design_notification_01"]}
+{"query": "decoupled notification triggers retries dead letter queue", "category": "system_design", "level": "junior", "expected_card_ids": ["system_design_notification_01"]}
+{"query": "real time chat application WebSockets Cassandra storage", "category": "system_design", "level": "mid", "expected_card_ids": ["system_design_chat_01"]}
+{"query": "1 on 1 and group chat message ordering Snowflake IDs", "category": "system_design", "level": "junior", "expected_card_ids": ["system_design_chat_01"]}
+{"query": "distributed web crawler URL frontier Bloom filter politeness", "category": "system_design", "level": "mid", "expected_card_ids": ["system_design_crawler_01"]}
+{"query": "deduplication of web pages host queue delay", "category": "system_design", "level": "junior", "expected_card_ids": ["system_design_crawler_01"]}
+{"query": "distributed key value store DynamoDB consistent hashing quorum", "category": "system_design", "level": "mid", "expected_card_ids": ["system_design_kv_store_01"]}

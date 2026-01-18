@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-08-12T22:51:37Z",
+  "total_cases": 35,
+  "hit_at_1_pct": 94.29,
+  "hit_at_3_pct": 100.0,
+  "mrr": 0.9714,
+  "mean_latency_ms": 30.0,
+  "p95_latency_ms": 38.08
+}
