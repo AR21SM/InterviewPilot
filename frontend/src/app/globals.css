@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.12 0 0);
+  /* Neutral black */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.12 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.12 0 0);
+  --primary: oklch(0.12 0 0);
+  /* Black as primary */
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.12 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.5 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.12 0 0);
+  --destructive: oklch(0.58 0.25 29);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.92 0 0);
+  --input: oklch(0.92 0 0);
+  --ring: oklch(0.12 0 0);
+  --radius: 0.5rem;
+  /* Sharper corners */
+}
+
+.dark {
+  /* Technical Dark Mode (Vercel/Linear style) -> Neutral, not purple */
+  --background: oklch(0.05 0 0);
+  /* Pure nearly-black gray */
+  --foreground: oklch(0.95 0 0);
+  --card: oklch(0.05 0 0);
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.05 0 0);
+  --popover-foreground: oklch(0.95 0 0);
+  --primary: oklch(0.95 0 0);
+  /* White primary */
+  --primary-foreground: oklch(0.05 0 0);
+  --secondary: oklch(0.12 0 0);
+  --secondary-foreground: oklch(0.95 0 0);
+  --muted: oklch(0.12 0 0);
+  --muted-foreground: oklch(0.6 0 0);
+  --accent: oklch(0.12 0 0);
+  --accent-foreground: oklch(0.95 0 0);
+  --destructive: oklch(0.4 0.15 29);
+  --destructive-foreground: oklch(0.95 0 0);
+  --border: oklch(0.2 0 0);
+  /* Subtle borders */
+  --input: oklch(0.2 0 0);
+  --ring: oklch(0.8 0 0);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
+  }
+}
+
+@layer utilities {
+  .bg-grid-small-white\/10 {
+    background-size: 20px 20px;
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  }
+
+  .bg-dot-white\/10 {
+    background-size: 20px 20px;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  }
+
+  .text-gradient-subtle {
+    @apply bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60;
+  }
+
+  .glass-panel {
+    @apply bg-zinc-900/80 border border-white/10;
+  }
+}
+
+@keyframes beam {
+  from {
+    top: -100px;
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  to {
+    top: 100vh;
+    opacity: 0;
+  }
+}
+
+.animate-beam {
+  position: absolute;
+  width: 1px;
+  height: 200px;
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.5), transparent);
+  animation: beam 7s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
