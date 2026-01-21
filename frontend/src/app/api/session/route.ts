@@ -34,9 +34,20 @@ export async function POST(req: NextRequest) {
         const roomName = `room-${crypto.randomBytes(6).toString("hex")}`;
         const participantIdentity = `candidate-${crypto.randomBytes(4).toString("hex")}`;
 
+        const participantMetadata = JSON.stringify({
+            interview_type: validatedType,
+            level: validatedLevel,
+            question_count: validatedCount,
+            target_role: targetRole,
+            focus_topic: focusTopic,
+        });
+
+        // Pass metadata in the constructor so the LiveKit SDK embeds it in the JWT claims.
+        // Setting it as a post-construction property is a no-op and the agent never receives it.
         const at = new AccessToken(apiKey, apiSecret, {
             identity: participantIdentity,
             ttl: "1h",
+            metadata: participantMetadata,
         });
 
         at.addGrant({
@@ -44,15 +55,8 @@ export async function POST(req: NextRequest) {
             room: roomName,
             canPublish: true,
             canSubscribe: true,
+            // Must be true so the agent can publish data channel events (eval payloads) back to this participant.
             canPublishData: true,
-        });
-
-        at.metadata = JSON.stringify({
-            interview_type: validatedType,
-            level: validatedLevel,
-            question_count: validatedCount,
-            target_role: targetRole,
-            focus_topic: focusTopic,
         });
 
         const token = await at.toJwt();
@@ -62,9 +66,10 @@ export async function POST(req: NextRequest) {
             url: livekitUrl,
             roomName,
         });
-    } catch (e: any) {
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : "Failed to initialize interview session";
         return NextResponse.json(
-            { error: e.message || "Failed to initialize interview session" },
+            { error: message },
             { status: 500 }
         );
     }

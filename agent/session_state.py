@@ -5,7 +5,7 @@ In-memory state management for active voice interview sessions.
 """
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from rag.models import InterviewCard
@@ -87,43 +87,79 @@ class InterviewSessionState:
         return self.main_question_index >= self.config.question_count
 
     def build_final_report(self) -> FinalReportEvent:
-        """Synthesize session state into FinalReportEvent."""
+        """Synthesize session state into FinalReportEvent with exact main question breakdown."""
         self.ended_at = datetime.now()
         duration_seconds = (self.ended_at - self.started_at).total_seconds()
 
-        valid_evals = [t.evaluation_event for t in self.turns if t.evaluation_event and t.evaluation_event.evaluation_status == "success"]
-        session_avg = (
-            sum(e.overall_score for e in valid_evals) / len(valid_evals)
-            if valid_evals
-            else 0.0
-        )
+        # Guard against sessions that ended with no evaluated turns
+        if not self.turns:
+            logger.warning(f"Session {self.session_id} ended with no recorded turns.")
+            return FinalReportEvent(
+                session_id=self.session_id,
+                interview_type=self.config.interview_type,
+                level=self.config.level,
+                target_role=self.config.target_role,
+                focus_topic=self.config.focus_topic,
+                duration_seconds=round(duration_seconds, 1),
+                questions_answered=0,
+                session_average=0.0,
+                strengths=[],
+                top_improvements=[],
+                question_breakdown=[],
+                average_retrieval_ms=0.0,
+                average_evaluation_ms=0.0,
+            )
+
+        # Group turns by main question_number to ensure 1 breakdown entry per main question card
+        turns_by_question: dict[int, list[TurnRecord]] = {}
+        for t in self.turns:
+            turns_by_question.setdefault(t.question_number, []).append(t)
 
         all_strengths: list[str] = []
         all_improvements: list[str] = []
         question_breakdown: list[QuestionReportEntry] = []
+        question_scores: list[float] = []
 
-        for turn in self.turns:
-            score = turn.evaluation_event.overall_score if turn.evaluation_event else 0.0
-            strengths = turn.evaluation_event.strengths if turn.evaluation_event else []
-            improvements = turn.evaluation_event.improvements if turn.evaluation_event else []
+        for q_num in sorted(turns_by_question.keys()):
+            q_turns = turns_by_question[q_num]
+            card = q_turns[0].card
 
-            all_strengths.extend(strengths)
-            all_improvements.extend(improvements)
+            # Extract successful evaluations for this main question (main + follow-up)
+            evals = [t.evaluation_event for t in q_turns if t.evaluation_event and t.evaluation_event.evaluation_status == "success"]
+            if evals:
+                # Latest or follow-up evaluation score for the question
+                q_score = evals[-1].overall_score
+            else:
+                q_score = 0.0
+
+            question_scores.append(q_score)
+
+            combined_transcript = " | ".join(t.candidate_transcript for t in q_turns)
+            q_strengths = [s for e in evals for s in e.strengths]
+            q_improvements = [imp for e in evals for imp in e.improvements]
+
+            all_strengths.extend(q_strengths)
+            all_improvements.extend(q_improvements)
 
             question_breakdown.append(
                 QuestionReportEntry(
-                    question_number=turn.question_number,
-                    question_id=turn.card.id,
-                    question_title=turn.card.title,
-                    question_text=turn.card.question,
-                    candidate_transcript=turn.candidate_transcript,
-                    overall_score=round(score, 1),
-                    strengths=strengths,
-                    improvements=improvements,
+                    question_number=q_num,
+                    question_id=card.id,
+                    question_title=card.title,
+                    question_text=card.question,
+                    candidate_transcript=combined_transcript,
+                    overall_score=round(q_score, 1),
+                    strengths=list(dict.fromkeys(q_strengths))[:2],
+                    improvements=list(dict.fromkeys(q_improvements))[:2],
                 )
             )
 
-        # Unique strengths and improvements preserving order
+        session_avg = (
+            sum(question_scores) / len(question_scores)
+            if question_scores
+            else 0.0
+        )
+
         unique_strengths = list(dict.fromkeys(all_strengths))[:3]
         unique_improvements = list(dict.fromkeys(all_improvements))[:3]
 
@@ -145,7 +181,7 @@ class InterviewSessionState:
             target_role=self.config.target_role,
             focus_topic=self.config.focus_topic,
             duration_seconds=round(duration_seconds, 1),
-            questions_answered=len(self.turns),
+            questions_answered=len(question_breakdown),
             session_average=round(session_avg, 1),
             strengths=unique_strengths,
             top_improvements=unique_improvements,

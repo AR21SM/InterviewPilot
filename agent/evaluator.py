@@ -127,7 +127,7 @@ class ResponseEvaluator:
                 overall_score=0.0,
                 criteria=[],
                 strengths=[],
-                improvements=[f"Evaluation pipeline error: {e}"],
+                improvements=["Evaluation unavailable for this response."],
                 follow_up_focus=None,
                 evaluation_status="failed",
                 retrieval_ms=retrieval_ms,
@@ -140,32 +140,38 @@ class ResponseEvaluator:
         evaluations: list[CriterionEvaluation],
     ) -> float:
         """
-        Calculate overall 1-10 score deterministically using card criterion weights.
+        Calculate overall 1-10 score deterministically using exact card rubric weights.
 
         Score per criterion is 1-5 scale:
         fraction = score / 5.0
         weighted_sum = sum(fraction * weight)
-        overall_score = round(weighted_sum * 10.0, 1)
+        overall_score = round((weighted_sum / total_rubric_weight) * 10.0, 1)
+
+        Enforces full rubric denominator. Any criterion missing from LLM evaluations
+        is assigned minimum score 1 (fraction 1/5 = 0.2) to prevent score inflation.
         """
-        if not card.rubric or not evaluations:
+        if not card.rubric:
             return 0.0
 
         rubric_map = {c.name.lower(): c.weight for c in card.rubric}
-        weighted_sum = 0.0
-        total_weight = 0.0
-
-        for eval_item in evaluations:
-            crit_name = eval_item.criterion.lower()
-            weight = rubric_map.get(crit_name, 0.0)
-
-            # 1-5 scale mapped to 0.2 - 1.0 fraction
-            score_fraction = max(1, min(5, eval_item.score)) / 5.0
-            weighted_sum += score_fraction * weight
-            total_weight += weight
-
-        if total_weight <= 0:
+        total_rubric_weight = sum(c.weight for c in card.rubric)
+        if total_rubric_weight <= 0:
             return 0.0
 
-        # Normalize weighted sum to 1-10 scale
-        normalized = (weighted_sum / total_weight) * 10.0
+        # Map evaluated criteria (first occurrence per criterion name)
+        eval_map: dict[str, int] = {}
+        for item in evaluations:
+            key = item.criterion.lower().strip()
+            if key in rubric_map and key not in eval_map:
+                eval_map[key] = max(1, min(5, item.score))
+
+        weighted_sum = 0.0
+        for criterion in card.rubric:
+            key = criterion.name.lower()
+            # If LLM missed a criterion, penalize with minimum score 1
+            score = eval_map.get(key, 1)
+            score_fraction = score / 5.0
+            weighted_sum += score_fraction * criterion.weight
+
+        normalized = (weighted_sum / total_rubric_weight) * 10.0
         return round(normalized, 1)

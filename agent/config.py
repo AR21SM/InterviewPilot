@@ -61,6 +61,21 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = Field(default="INFO")
     debug: bool = Field(default=False)
 
+    def validate_runtime_credentials(self) -> None:
+        """Verify that mandatory API keys and LiveKit URLs are configured."""
+        missing = []
+        if not self.groq_api_key:
+            missing.append("GROQ_API_KEY")
+        if not self.livekit_url:
+            missing.append("LIVEKIT_URL")
+        if not self.livekit_api_key:
+            missing.append("LIVEKIT_API_KEY")
+        if not self.livekit_api_secret:
+            missing.append("LIVEKIT_API_SECRET")
+
+        if missing:
+            raise ValueError(f"Missing required runtime environment variables: {', '.join(missing)}")
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -54,6 +54,31 @@ def test_deterministic_weighted_score_calculation() -> None:
     assert score_min == 2.0
 
 
+def test_missing_criterion_penalized_in_weighted_score() -> None:
+    """Verify that if LLM omits a criterion, it receives minimum score 1/5 and the full rubric denominator is enforced."""
+    card = InterviewCard(
+        id="test_card",
+        category="behavioral",
+        title="Test Card",
+        levels=["mid"],
+        question="Test Question?",
+        tags=["test"],
+        rubric=[
+            RubricCriterion(name="ownership", weight=0.5, description="Ownership"),
+            RubricCriterion(name="impact", weight=0.5, description="Impact"),
+        ],
+    )
+
+    # LLM returns ONLY ownership: 5/5, omitting impact completely
+    # Ownership: 5/5*0.5 = 0.5. Missing Impact: penalized as 1/5*0.5 = 0.1.
+    # Total fraction: 0.6 -> 6.0 / 10 (NOT 10.0!)
+    evals_partial = [
+        CriterionEvaluation(criterion="ownership", score=5, evidence="Great ownership"),
+    ]
+    score = ResponseEvaluator.calculate_weighted_score(card, evals_partial)
+    assert score == 6.0
+
+
 @pytest.mark.asyncio
 async def test_empty_transcript_failure_status() -> None:
     """Verify that empty candidate responses return evaluation_status = 'failed' without fake scores."""

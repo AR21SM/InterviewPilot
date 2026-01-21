@@ -35,9 +35,17 @@ def get_evaluator_client(settings: Settings) -> AsyncOpenAI:
 
     Used by ResponseEvaluator for strict structured JSON evaluation.
     Groq API Base URL: https://api.groq.com/openai/v1
+
+    Raises:
+        ValueError: If GROQ_API_KEY is not configured, rather than silently
+                    using a placeholder that would fail at inference time.
     """
-    api_key = settings.groq_api_key or "mock-groq-key"
+    if not settings.groq_api_key:
+        raise ValueError(
+            "GROQ_API_KEY is required for structured evaluation but is not set. "
+            "Add it to your .env file."
+        )
     return AsyncOpenAI(
         base_url="https://api.groq.com/openai/v1",
-        api_key=api_key,
+        api_key=settings.groq_api_key,
     )

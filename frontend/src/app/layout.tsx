@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Inter, JetBrains_Mono, VT323 } from "next/font/google";
+import { GeistPixelLine } from "geist/font/pixel";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -8,21 +9,22 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-const plusJakarta = Plus_Jakarta_Sans({
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
-  variable: "--font-jakarta",
+  variable: "--font-jetbrains",
+});
+
+const vt323 = VT323({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-pixel",
 });
 
 export const metadata: Metadata = {
-  title: "InterviewPilot | AI Interview Coach",
-  description: "Master your interviews with AI-powered voice coaching. Practice behavioral, technical, and system design interviews with real-time feedback.",
-  keywords: ["interview", "AI", "coach", "practice", "behavioral", "technical", "career"],
+  title: "InterviewPilot | Real-Time Voice AI Interview Coach",
+  description: "Real-time voice AI interview coach with LiveKit, Groq, rubric-grounded RAG, structured evaluations, and adaptive follow-ups.",
+  keywords: ["interview", "AI", "coach", "voice-ai", "livekit", "groq", "rag", "pydantic"],
   authors: [{ name: "InterviewPilot" }],
-  openGraph: {
-    title: "InterviewPilot | AI Interview Coach",
-    description: "Master your interviews with AI-powered voice coaching",
-    type: "website",
-  },
 };
 
 export default function RootLayout({
@@ -32,7 +34,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body className={`${inter.variable} ${plusJakarta.variable} font-sans bg-background text-foreground antialiased`}>
+      <body className={`${inter.variable} ${jetbrainsMono.variable} ${vt323.variable} ${GeistPixelLine.variable} font-sans bg-background text-foreground antialiased`}>
         {children}
         <Toaster richColors position="top-right" theme="dark" />
       </body>
