@@ -3,45 +3,64 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { AsciiWave } from "./ascii-wave";
+import { FlipWords } from "@/components/ui/flip-words";
 
 const pixelFont = { fontFamily: "var(--font-geist-pixel-line), var(--font-pixel), var(--font-jetbrains), monospace" };
 const SMOOTH_EASE = [0.16, 1, 0.3, 1] as const;
 
 export function HeroSection({ onStartClick }: { onStartClick?: () => void }) {
   return (
-    <section className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-20 bg-black">
+    <section className="relative flex min-h-[100svh] flex-col justify-center overflow-x-hidden bg-black pt-16 sm:pt-20">
       {/* Subtle grid */}
-      <div className="absolute inset-0 grid-pattern opacity-50 pointer-events-none" />
+      <div
+        className="absolute inset-0 grid-pattern opacity-45 pointer-events-none"
+        style={{
+          maskImage: "linear-gradient(to bottom, black 0%, black 65%, transparent 90%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 65%, transparent 90%)",
+        }}
+      />
 
-      {/* ASCII Wave — full bleed, hero-exclusive atmospheric effect */}
-      <div className="absolute inset-0 opacity-75 pointer-events-none overflow-hidden">
+      {/* ASCII Wave — smooth fade starting around the stat cards */}
+      <div
+        className="absolute inset-0 opacity-75 pointer-events-none overflow-hidden"
+        style={{
+          maskImage: "linear-gradient(to bottom, black 0%, black 58%, transparent 86%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 58%, transparent 86%)",
+        }}
+      >
         <AsciiWave className="w-full h-full" />
       </div>
 
-      {/* Gradient fade at bottom — bleeds into the features section (#030303) */}
-      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[#030303] to-transparent pointer-events-none z-10" />
+      {/* Smooth darkness fade covering bottom area */}
+      <div className="absolute bottom-0 inset-x-0 h-44 bg-gradient-to-t from-[#030303] via-[#030303]/75 to-transparent pointer-events-none z-10" />
 
-      <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-8 py-12 lg:py-24">
+      <div className="relative z-10 mx-auto w-full max-w-6xl px-5 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-[clamp(2rem,6vh,6rem)]">
         {/* Headline */}
-        <div className="text-center max-w-5xl mx-auto mb-10">
+        <div className="mx-auto mb-7 max-w-5xl text-center sm:mb-9">
           <motion.h1
             initial={{ opacity: 0, y: 24, scale: 0.99 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.9, ease: SMOOTH_EASE }}
-            className="font-mono text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight leading-[0.98] mb-8"
+            className="mb-5 font-mono text-[clamp(2.5rem,5.2vw,4.5rem)] font-semibold leading-[.98] tracking-tight sm:mb-7"
             style={pixelFont}
           >
             Practice interviews with an AI that{" "}
-            <span className="text-primary">listens, evaluates, and adapts.</span>
+            <span className="inline-flex min-w-[6ch] justify-center text-primary">
+              <FlipWords
+                words={["listens deeply.", "evaluates fairly.", "adapts to you."]}
+                duration={2400}
+                className="px-1 text-primary"
+              />
+            </span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.15, ease: SMOOTH_EASE }}
-            className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed"
+            className="mx-auto max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base lg:text-lg"
           >
-            Conduct realistic voice interviews with question-specific rubrics, structured answer evaluation, and adaptive follow-ups, all delivered in real time.
+            Rehearse the exact conversation ahead of you, out loud, with an interviewer that waits for your reasoning before it responds.
           </motion.p>
         </div>
 
@@ -50,7 +69,7 @@ export function HeroSection({ onStartClick }: { onStartClick?: () => void }) {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, delay: 0.25, ease: SMOOTH_EASE }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-20"
+          className="mb-10 flex flex-col items-center justify-center gap-3 sm:flex-row lg:mb-[clamp(2.5rem,7vh,5rem)]"
         >
           <button
             onClick={onStartClick}
@@ -71,55 +90,27 @@ export function HeroSection({ onStartClick }: { onStartClick?: () => void }) {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.3, ease: SMOOTH_EASE }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-border rounded-xl border border-border overflow-hidden card-shadow"
+          className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-border bg-border shadow-2xl shadow-black sm:grid-cols-2 lg:grid-cols-4"
         >
           {[
-            {
-              value: "Real-Time Voice",
-              label: "Audio Streaming",
-              desc: "Speak naturally with an AI interviewer.",
-              company: "CORE BENEFIT 01",
-            },
-            {
-              value: "Adaptive Follow-Ups",
-              label: "Dynamic Probing",
-              desc: "Questions change based on your answers.",
-              company: "CORE BENEFIT 02",
-            },
-            {
-              value: "Rubric-Based Feedback",
-              label: "Structured Evaluation",
-              desc: "Every response is evaluated against clear criteria.",
-              company: "CORE BENEFIT 03",
-            },
-            {
-              value: "Detailed Reports",
-              label: "Actionable Insights",
-              desc: "See scores, strengths, and areas to improve.",
-              company: "CORE BENEFIT 04",
-            },
+            { value: "Live Conversation", label: "Voice-First Practice", desc: "Answer naturally—no forms or scripted chat.", company: "SESSION FACT 01" },
+            { value: "Role-Aware Setup", label: "Your Context", desc: "Choose the track, level, role, and focus area.", company: "SESSION FACT 02" },
+            { value: "Finite Rounds", label: "3 or 5 Questions", desc: "A focused rehearsal with a clear stopping point.", company: "SESSION FACT 03" },
+            { value: "Three Tracks", label: "Purpose-Built Modes", desc: "Behavioral, technical reasoning, or system design.", company: "SESSION FACT 04" },
           ].map((stat, idx) => (
             <motion.div
               key={stat.company}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.35 + idx * 0.06, ease: SMOOTH_EASE }}
-              className="p-6 lg:p-8 flex justify-between min-h-[160px] bg-black shadow-none flex-col"
+              className="flex min-h-[132px] flex-col justify-between bg-black p-5 shadow-none lg:min-h-[clamp(8.25rem,16vh,10rem)] lg:p-6"
             >
               <div>
-                <span className="text-xl lg:text-2xl font-bold text-foreground block mb-1" style={pixelFont}>
-                  {stat.value}
-                </span>
-                <span className="text-xs font-semibold text-primary block mb-1 font-mono">
-                  {stat.label}
-                </span>
-                <span className="text-muted-foreground text-xs leading-relaxed block">
-                  {stat.desc}
-                </span>
+                <span className="mb-1 block text-xl font-bold text-foreground lg:text-[clamp(1.2rem,1.45vw,1.5rem)]" style={pixelFont}>{stat.value}</span>
+                <span className="text-xs font-semibold text-primary block mb-1 font-mono">{stat.label}</span>
+                <span className="text-muted-foreground text-xs leading-relaxed block">{stat.desc}</span>
               </div>
-              <div className="font-mono text-[10px] text-muted-foreground/60 tracking-widest mt-4">
-                {stat.company}
-              </div>
+              <div className="font-mono text-[10px] text-muted-foreground/60 tracking-widest mt-4">{stat.company}</div>
             </motion.div>
           ))}
         </motion.div>

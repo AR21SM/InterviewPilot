@@ -9,7 +9,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-from rag.models import ExperienceLevel, InterviewCategory
+from rag.models import ExperienceLevel, InterviewCard, InterviewCategory
 
 
 class InterviewConfig(BaseModel):
@@ -50,6 +50,25 @@ class InterviewConfig(BaseModel):
         return 3
 
 
+def fit_config_to_available_cards(
+    config: InterviewConfig,
+    cards: list[InterviewCard],
+) -> tuple[InterviewConfig, int]:
+    """Limit the requested question count to matching cards in the knowledge base."""
+    available_count = sum(
+        1
+        for card in cards
+        if card.category == config.interview_type and config.level in card.levels
+    )
+    if available_count == 0:
+        raise ValueError(
+            f"No interview cards are available for {config.interview_type}/{config.level}."
+        )
+    if config.question_count <= available_count:
+        return config, available_count
+    return config.model_copy(update={"question_count": available_count}), available_count
+
+
 class CriterionEvaluation(BaseModel):
     """Evaluation result for a single rubric criterion."""
 
@@ -85,6 +104,19 @@ class EvaluationEvent(BaseModel):
     evaluation_status: str = "success"
     retrieval_ms: float = 0.0
     evaluation_ms: float = 0.0
+
+
+class QuestionStartedEvent(BaseModel):
+    """Payload streamed when the agent begins a new main interview question."""
+
+    version: int = Field(default=1)
+    type: Literal["question_started"] = Field(default="question_started")
+    session_id: str
+    question_id: str
+    question_number: int
+    question_count: int
+    question_title: str
+    question_text: str
 
 
 class QuestionReportEntry(BaseModel):

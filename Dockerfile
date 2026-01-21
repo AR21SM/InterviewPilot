@@ -5,8 +5,8 @@ WORKDIR /app
 # Install uv package manager
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Copy configuration and lockfiles
-COPY pyproject.toml uv.lock ./
+# Copy configuration, lockfiles, and project metadata
+COPY pyproject.toml uv.lock README.md ./
 
 # Install project dependencies into container environment
 RUN uv sync --frozen --no-dev
@@ -18,5 +18,5 @@ COPY knowledge/ ./knowledge/
 
 ENV PYTHONUNBUFFERED=1
 
-# Run LiveKit agent worker in production mode
-CMD ["uv", "run", "python", "-m", "agent.main", "start"]
+# Run LiveKit agent worker to automatically accept all room connections
+CMD ["uv", "run", "python", "-m", "agent.main", "dev"]

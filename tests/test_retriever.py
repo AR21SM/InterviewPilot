@@ -40,13 +40,20 @@ def test_retriever_filtering_and_exclusion() -> None:
     retriever = CardRetriever(ingestor=ingestor, vectorstore_manager=vectorstore)
 
     # Search behavioral mid level
+    excluded = {"b2"}
     results = retriever.retrieve_cards(
         query="behavioral question",
         category="behavioral",
         level="mid",
         k=2,
-        exclude_ids={"b2"},
+        exclude_ids=excluded,
     )
 
     assert len(results) == 1
     assert results[0].card.id == "b1"
+    assert excluded == {"b2"}
+    vectorstore.search.assert_called_once_with(
+        query="behavioral question",
+        category="behavioral",
+        k=8,
+    )

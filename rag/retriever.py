@@ -47,13 +47,13 @@ class CardRetriever:
             Ranked list of RetrievedCard objects
         """
         start_time = time.perf_counter()
-        exclude = exclude_ids or set()
+        exclude = set(exclude_ids or ())
 
         # Fetch extra results to allow filtering
         results = self.vectorstore_manager.search(
             query=query,
             category=category,
-            k=k * 4,
+            k=max(k * 4, len(self.ingestor.cards)),
         )
 
         retrieved: list[RetrievedCard] = []

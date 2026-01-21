@@ -3,6 +3,8 @@ Unit tests for configuration and Pydantic settings.
 """
 
 from agent import InterviewConfig
+from agent.models import fit_config_to_available_cards
+from rag import CardIngestor
 
 
 def test_interview_config_canonicalization() -> None:
@@ -31,3 +33,18 @@ def test_interview_config_invalid_fallback() -> None:
     assert config.interview_type == "behavioral"
     assert config.level == "mid"
     assert config.question_count == 3
+
+
+def test_question_count_is_limited_to_matching_cards() -> None:
+    """A session cannot request more questions than its track and level provide."""
+    config = InterviewConfig(
+        interview_type="system_design",
+        level="intern",
+        question_count=5,
+    )
+    cards = list(CardIngestor(knowledge_dir="./knowledge").load_cards().values())
+
+    adjusted, available_count = fit_config_to_available_cards(config, cards)
+
+    assert available_count == 1
+    assert adjusted.question_count == 1

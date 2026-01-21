@@ -33,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning data-scroll-behavior="smooth">
       <body className={`${inter.variable} ${jetbrainsMono.variable} ${vt323.variable} ${GeistPixelLine.variable} font-sans bg-background text-foreground antialiased`}>
         {children}
         <Toaster richColors position="top-right" theme="dark" />

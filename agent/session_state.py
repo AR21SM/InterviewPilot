@@ -5,7 +5,7 @@ In-memory state management for active voice interview sessions.
 """
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 
 from rag.models import InterviewCard
@@ -86,9 +86,15 @@ class InterviewSessionState:
         """Check whether session has reached configured question count."""
         return self.main_question_index >= self.config.question_count
 
+    @property
+    def has_ended(self) -> bool:
+        """Return whether the final session report has already been built."""
+        return self.ended_at is not None
+
     def build_final_report(self) -> FinalReportEvent:
         """Synthesize session state into FinalReportEvent with exact main question breakdown."""
-        self.ended_at = datetime.now()
+        if self.ended_at is None:
+            self.ended_at = datetime.now()
         duration_seconds = (self.ended_at - self.started_at).total_seconds()
 
         # Guard against sessions that ended with no evaluated turns
@@ -126,11 +132,7 @@ class InterviewSessionState:
 
             # Extract successful evaluations for this main question (main + follow-up)
             evals = [t.evaluation_event for t in q_turns if t.evaluation_event and t.evaluation_event.evaluation_status == "success"]
-            if evals:
-                # Latest or follow-up evaluation score for the question
-                q_score = evals[-1].overall_score
-            else:
-                q_score = 0.0
+            q_score = evals[-1].overall_score if evals else 0.0
 
             question_scores.append(q_score)
 

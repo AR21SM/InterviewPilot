@@ -9,6 +9,7 @@ import { HowItWorksSection } from "@/components/landing/how-it-works-section";
 import { IntegrationsSection } from "@/components/landing/integrations-section";
 import { CtaSection } from "@/components/landing/cta-section";
 import { FooterSection } from "@/components/landing/footer-section";
+import { SectionSeparator } from "@/components/landing/section-separator";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,13 @@ export default function Home() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Pre-warm backend container in background so it's warm when candidate enters room
+  useState(() => {
+    if (typeof window !== "undefined") {
+      fetch("https://interviewpilot-8d3q.onrender.com/", { mode: "no-cors" }).catch(() => {});
+    }
+  });
 
   const [selectedType, setSelectedType] = useState<"behavioral" | "technical" | "system_design">("behavioral");
   const [level, setLevel] = useState<"intern" | "junior" | "mid">("mid");
@@ -79,8 +87,11 @@ export default function Home() {
       <Navigation onStartClick={handleStartClick} />
       <HeroSection onStartClick={handleStartClick} />
       <FeaturesSection onSelectTrack={handleSelectTrack} />
+      <SectionSeparator />
       <HowItWorksSection />
+      <SectionSeparator />
       <IntegrationsSection />
+      <SectionSeparator />
       <CtaSection onStartClick={handleStartClick} />
       <FooterSection />
 

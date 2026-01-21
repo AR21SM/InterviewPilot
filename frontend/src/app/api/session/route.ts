@@ -61,10 +61,21 @@ export async function POST(req: NextRequest) {
 
         const token = await at.toJwt();
 
+        // Non-blocking wake-up ping to backend container so it connects to LiveKit Cloud immediately
+        const backendUrl = process.env.RENDER_BACKEND_URL || "https://interviewpilot-8d3q.onrender.com";
+        fetch(backendUrl, { cache: "no-store" }).catch(() => {});
+
         return NextResponse.json({
             token,
             url: livekitUrl,
             roomName,
+            config: {
+                interview_type: validatedType,
+                level: validatedLevel,
+                question_count: validatedCount,
+                target_role: targetRole,
+                focus_topic: focusTopic,
+            },
         });
     } catch (e: unknown) {
         const message = e instanceof Error ? e.message : "Failed to initialize interview session";

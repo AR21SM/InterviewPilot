@@ -1,72 +1,49 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
-import { AsciiCube } from "./ascii-cube";
-import { AsciiSphere } from "./ascii-sphere";
+import { motion } from "motion/react";
 
 const pixelFont = { fontFamily: "var(--font-geist-pixel-line), var(--font-pixel), var(--font-jetbrains), monospace" };
-const SMOOTH_EASE = [0.16, 1, 0.3, 1] as const;
+const ease = [0.16, 1, 0.3, 1] as const;
 
 export function CtaSection({ onStartClick }: { onStartClick?: () => void }) {
   return (
-    <section className="relative py-32 overflow-hidden bg-black">
-      {/* Top gradient separator */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-
-      {/* Subtle grid */}
-      <div className="absolute inset-0 grid-pattern opacity-15 pointer-events-none" />
-
-      <div className="max-w-6xl mx-auto px-6 lg:px-8">
+    <section className="section-rails relative overflow-hidden bg-black py-24 sm:py-32">
+      <div className="mx-auto max-w-7xl px-5 lg:px-8">
         <motion.div
-          initial={{ opacity: 0, y: 24, scale: 0.98 }}
-          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.9, ease: SMOOTH_EASE }}
-          className="relative rounded-2xl overflow-hidden"
+          transition={{ duration: 0.8, ease }}
         >
-          {/* Background */}
-          <div className="absolute inset-0 bg-foreground" />
-          <div className="absolute inset-0 grid-pattern opacity-10" />
-
-          {/* ASCII cube background animation */}
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 overflow-hidden opacity-25">
-            <AsciiCube className="w-[600px] h-[500px]" />
-          </div>
-
-          <div className="relative z-10 px-8 lg:px-16 py-16 lg:py-12 bg-transparent">
-            <div className="flex items-center justify-between gap-8">
-              <div className="max-w-2xl">
+          <div className="relative overflow-hidden rounded-lg border border-white/10 bg-[#070807]">
+            <div className="grid min-h-[390px] lg:grid-cols-[1.35fr_.65fr]">
+              {/* Left Column */}
+              <div className="flex flex-col justify-center border-b border-white/[.07] p-8 sm:p-12 lg:border-b-0 lg:border-r lg:p-16">
+                <p className="mb-5 font-mono text-[10px] uppercase tracking-[.2em] text-primary">
+                  05 / Start your next practice round
+                </p>
                 <h2
-                  className="font-mono text-3xl lg:text-5xl font-semibold tracking-tight mb-6 text-background text-balance"
+                  className="max-w-3xl text-balance text-4xl font-semibold tracking-tight sm:text-6xl"
                   style={pixelFont}
                 >
-                  Ready to practice?
+                  The next interview should not be your first rehearsal.
                 </h2>
-
-                <p className="text-lg text-background/70 mb-8 leading-relaxed max-w-lg">
-                  Run a focused voice interview and receive rubric-grounded feedback on every answer.
-                </p>
-
-                <div className="flex flex-col sm:flex-row items-start gap-4">
-                  <button
-                    onClick={onStartClick}
-                    className="inline-flex items-center gap-2 bg-background hover:bg-background/90 text-foreground px-6 h-12 text-sm font-medium rounded-lg font-mono group transition-colors"
-                  >
-                    Start Practice
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-                  </button>
-                  <a href="#how-it-works">
-                    <button className="inline-flex items-center h-12 px-6 text-sm font-medium border border-background/30 text-background hover:bg-background/10 bg-transparent font-mono rounded-lg transition-colors">
-                      How It Works
-                    </button>
-                  </a>
-                </div>
               </div>
 
-              {/* ASCII Sphere */}
-              <div className="hidden lg:block opacity-40">
-                <AsciiSphere className="w-[500px] h-[460px]" />
+              {/* Right Column */}
+              <div className="flex flex-col justify-center p-8 sm:p-12">
+                <p className="text-base leading-7 text-white/50">
+                  Pick the conversation ahead of you and practice it out loud while the stakes are still low.
+                </p>
+                <button
+                  onClick={onStartClick}
+                  className="mt-8 h-12 w-fit rounded-lg bg-white px-6 text-sm font-semibold text-black transition-colors hover:bg-primary cursor-pointer"
+                >
+                  Start practice
+                </button>
+                <p className="mt-5 font-mono text-[9px] uppercase tracking-[.14em] text-white/25">
+                  No sign-up · Live voice · Focused session
+                </p>
               </div>
             </div>
           </div>

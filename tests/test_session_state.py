@@ -3,6 +3,7 @@ Unit tests for session state and final report aggregation.
 """
 
 from agent import EvaluationEvent, InterviewConfig, InterviewSessionState
+from agent.models import QuestionStartedEvent
 from rag.models import InterviewCard, RubricCriterion
 
 
@@ -75,7 +76,27 @@ def test_session_state_progression_and_report() -> None:
     assert state.is_complete()
 
     report = state.build_final_report()
+    same_report = state.build_final_report()
     assert report.questions_answered == 2
     assert report.session_average == 7.0
     assert len(report.question_breakdown) == 2
     assert "Clear ownership" in report.strengths
+    assert state.has_ended
+    assert same_report.duration_seconds == report.duration_seconds
+
+
+def test_question_started_event_contract() -> None:
+    """The frontend receives enough structured data to render question progress."""
+    event = QuestionStartedEvent(
+        session_id="test_room",
+        question_id="b1",
+        question_number=1,
+        question_count=3,
+        question_title="Ownership",
+        question_text="Tell me about a time you took ownership.",
+    )
+
+    assert event.type == "question_started"
+    assert event.question_number == 1
+    assert event.question_count == 3
+    assert event.question_text.startswith("Tell me")

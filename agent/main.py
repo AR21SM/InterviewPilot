@@ -1,13 +1,7 @@
-"""
-InterviewPilot - LiveKit Voice Interview Agent (Groq & Local Embeddings)
-
-Real-time voice agent conducting adaptive mock interviews with Groq (Whisper STT, GPT-OSS 120B LLM, Orpheus TTS),
-local BGE rubric retrieval, structured evaluation, and LiveKit data channel streaming.
-"""
-
 import asyncio
 import json
 import logging
+import os
 import time
 from typing import Any
 
@@ -23,10 +17,11 @@ from livekit.agents import (
 from livekit.plugins import groq, silero
 
 from rag import CardIngestor, CardRetriever, VectorStoreManager
+
 from .config import get_settings
 from .evaluator import ResponseEvaluator
 from .llm_provider import create_interviewer_llm
-from .models import InterviewConfig
+from .models import InterviewConfig, QuestionStartedEvent, fit_config_to_available_cards
 from .prompts import get_agent_system_prompt
 from .session_state import InterviewSessionState
 
@@ -94,12 +89,33 @@ async def entrypoint(ctx: JobContext) -> None:
     )
 
     # Initialize local RAG pipeline and session state
-    ingestor, vectorstore, retriever = get_rag_pipeline()
+    ingestor, _, retriever = get_rag_pipeline()
+    requested_question_count = config.question_count
+    try:
+        config, available_question_count = fit_config_to_available_cards(
+            config,
+            list(ingestor.cards.values()),
+        )
+    except ValueError as error:
+        logger.error("%s", error)
+        return
+    if requested_question_count > available_question_count:
+        logger.warning(
+            "Requested %d questions, but only %d cards are available for category '%s' "
+            "and level '%s'; shortening the session.",
+            requested_question_count,
+            available_question_count,
+            config.interview_type,
+            config.level,
+        )
     session_state = InterviewSessionState(session_id=ctx.room.name, config=config)
 
     # Per-session turn lock: prevents concurrent evaluations for the same turn
     # if rapid VAD events fire multiple final transcripts before the first completes.
     _turn_lock = asyncio.Lock()
+    _last_transcript_created_at = 0.0
+    event_loop = asyncio.get_running_loop()
+    background_tasks: set[asyncio.Task[None]] = set()
 
     # Retrieve initial question card, measuring retrieval latency
     start_r = time.perf_counter()
@@ -113,7 +129,7 @@ async def entrypoint(ctx: JobContext) -> None:
     initial_retrieval_ms = (time.perf_counter() - start_r) * 1000.0
 
     if not retrieved_cards:
-        logger.error(f"No interview cards available for category '{config.interview_type}'.")
+        logger.error("Failed to retrieve an available interview card.")
         return
 
     first_card = retrieved_cards[0].card
@@ -165,19 +181,47 @@ async def entrypoint(ctx: JobContext) -> None:
         except Exception as e:
             logger.error(f"Failed to publish data event to LiveKit room: {e}")
 
+    async def conclude_session(message: str) -> None:
+        if session_state.has_ended:
+            return
+        final_report = session_state.build_final_report()
+        await publish_event(final_report.model_dump())
+        await session.say(message, allow_interruptions=True)
+
+    async def announce_question() -> None:
+        card = session_state.current_card
+        if card is None:
+            return
+        await publish_event(
+            QuestionStartedEvent(
+                session_id=session_state.session_id,
+                question_id=card.id,
+                question_number=session_state.main_question_index,
+                question_count=config.question_count,
+                question_title=card.title,
+                question_text=card.question,
+            ).model_dump()
+        )
+
     # Initial spoken introduction & first question
     greeting = (
-        f"Hello! Welcome to InterviewPilot. I'm Alex, your AI coach powered by Groq. "
+        f"Hello! Welcome to InterviewPilot. I'm Sarah, your AI interview coach. "
         f"Today we'll conduct a {config.interview_type.replace('_', ' ')} interview "
         f"for a {config.level} role. Let me begin with your first question."
     )
     await session.say(greeting, allow_interruptions=True)
+    await announce_question()
     await session.say(first_card.question, allow_interruptions=True)
 
     # Background handler for processing spoken candidate responses
     @session.on("user_input_transcribed")  # type: ignore[untyped-decorator]
     def on_user_input(ev: UserInputTranscribedEvent) -> None:
-        if not ev.is_final or not ev.transcript or not session_state.current_card:
+        if (
+            not ev.is_final
+            or not ev.transcript
+            or not session_state.current_card
+            or session_state.has_ended
+        ):
             return
 
         transcript = ev.transcript.strip()
@@ -185,6 +229,8 @@ async def entrypoint(ctx: JobContext) -> None:
             return
 
         async def process_evaluation() -> None:
+            nonlocal _last_transcript_created_at
+
             # Acquire turn lock to prevent duplicate concurrent evaluations
             # for the same transcribed segment. If another evaluation is already
             # in flight, skip this duplicate event.
@@ -193,6 +239,10 @@ async def entrypoint(ctx: JobContext) -> None:
                 return
 
             async with _turn_lock:
+                if session_state.has_ended or ev.created_at <= _last_transcript_created_at:
+                    return
+                _last_transcript_created_at = ev.created_at
+
                 card = session_state.current_card
                 if not card:
                     return
@@ -241,11 +291,8 @@ async def entrypoint(ctx: JobContext) -> None:
 
                 # Check if interview is complete (checked inside lock to prevent race)
                 if session_state.is_complete():
-                    final_report = session_state.build_final_report()
-                    await publish_event(final_report.model_dump())
-                    await session.say(
+                    await conclude_session(
                         "That concludes our mock interview session! I've synthesized your detailed performance report. Excellent work today.",
-                        allow_interruptions=True,
                     )
                 else:
                     # Retrieve next unused question card, measuring per-turn retrieval latency
@@ -264,20 +311,69 @@ async def entrypoint(ctx: JobContext) -> None:
                         next_card = next_cards[0].card
                         session_state.advance_question(next_card)
                         await session.say(f"Let me move on to question {session_state.main_question_index}.", allow_interruptions=True)
+                        await announce_question()
                         await session.say(next_card.question, allow_interruptions=True)
+                    else:
+                        logger.warning("No unused interview cards remain; ending the session early.")
+                        await conclude_session(
+                            "We've reached the end of the available questions for this interview track. "
+                            "I've prepared your performance report.",
+                        )
 
-        # Schedule the coroutine on the running event loop.
-        # LiveKit fires event callbacks from its internal thread, so we use
-        # asyncio.get_event_loop().call_soon_threadsafe to safely schedule
-        # the coroutine on the correct loop instead of creating tasks directly.
-        loop = asyncio.get_event_loop()
-        loop.call_soon_threadsafe(lambda: asyncio.ensure_future(process_evaluation()))
+        def schedule_evaluation() -> None:
+            task = event_loop.create_task(process_evaluation())
+            background_tasks.add(task)
+
+            def evaluation_finished(completed_task: asyncio.Task[None]) -> None:
+                background_tasks.discard(completed_task)
+                if completed_task.cancelled():
+                    return
+                error = completed_task.exception()
+                if error is not None:
+                    logger.error("Unhandled interview turn failure: %s", error, exc_info=error)
+
+            task.add_done_callback(evaluation_finished)
+
+        event_loop.call_soon_threadsafe(schedule_evaluation)
+
+
+def start_health_server() -> None:
+    """Start background HTTP health check server if PORT environment variable is present."""
+    port_str = os.environ.get("PORT")
+    if not port_str:
+        return
+    try:
+        port = int(port_str)
+    except ValueError:
+        return
+
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    import threading
+
+    class HealthHandler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(b'{"status":"healthy","service":"interviewpilot-agent"}')
+
+        def log_message(self, format: str, *args: object) -> None:
+            pass
+
+    server = HTTPServer(("0.0.0.0", port), HealthHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    logger.info("Health check HTTP server started on port %d", port)
 
 
 def main() -> None:
     """Main CLI entrypoint for running the LiveKit agent worker."""
     load_dotenv()
     settings = get_settings()
+    settings.validate_runtime_credentials()
+    
+    start_health_server()
+    get_rag_pipeline()
 
     worker_opts = agents.WorkerOptions(
         entrypoint_fnc=entrypoint,

@@ -1,7 +1,5 @@
 "use client";
 
-import { Github } from "lucide-react";
-
 const pixelFont = { fontFamily: "var(--font-geist-pixel-line), var(--font-pixel), var(--font-jetbrains), monospace" };
 
 const footerLinks = {
@@ -35,21 +33,10 @@ export function FooterSection() {
               </a>
 
               <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mb-6">
-                Real-time voice AI interview coach with rubric-grounded RAG, structured evaluation, and adaptive follow-ups.
+                An open-source rehearsal room for practicing difficult interview conversations before they count.
               </p>
 
-              {/* Social Links */}
-              <div className="flex gap-3">
-                <a
-                  href="https://github.com/AR21SM/InterviewPilot"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="p-2 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="GitHub"
-                >
-                  <Github className="w-4 h-4" />
-                </a>
-              </div>
+              <a href="https://github.com/AR21SM/InterviewPilot" target="_blank" rel="noreferrer" className="font-mono text-xs text-white/45 transition-colors hover:text-primary">View source on GitHub</a>
             </div>
 
             {/* Link Columns */}
@@ -78,13 +65,6 @@ export function FooterSection() {
           <p className="text-xs text-muted-foreground font-mono">
             © 2026 InterviewPilot. MIT Licensed.
           </p>
-
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              Voice Engine Connected
-            </span>
-          </div>
         </div>
       </div>
     </footer>

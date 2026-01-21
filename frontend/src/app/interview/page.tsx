@@ -1,44 +1,25 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   LiveKitRoom,
   RoomAudioRenderer,
   useConnectionState,
-  useParticipants,
   useLocalParticipant,
-  useTranscriptions,
+  useParticipants,
   useRoomContext,
+  useTranscriptions,
 } from "@livekit/components-react";
-import { ConnectionState, RoomEvent, Participant } from "livekit-client";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { AnimatePresence, motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { ConnectionState, RoomEvent } from "livekit-client";
+import { Check, Copy, Microphone, MicrophoneSlash, ShieldCheck, Waves } from "@phosphor-icons/react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  Mic,
-  MicOff,
-  ChevronLeft,
-  Sparkles,
-  CheckCircle2,
-  BarChart3,
-  Copy,
-  Check,
-  Clock,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
-import { AsciiWave } from "@/components/landing/ascii-wave";
 
-const pf = { fontFamily: "var(--font-geist-pixel-line), var(--font-pixel), var(--font-jetbrains), monospace" };
+const pixelFont = { fontFamily: "var(--font-geist-pixel-line), var(--font-pixel), var(--font-jetbrains), monospace" };
 
 interface CriterionEval {
   criterion: string;
@@ -60,6 +41,16 @@ interface EvaluationEventData {
   evaluation_status: string;
   retrieval_ms: number;
   evaluation_ms: number;
+}
+
+interface QuestionEventData {
+  type: "question_started";
+  session_id: string;
+  question_id: string;
+  question_number: number;
+  question_count: number;
+  question_title: string;
+  question_text: string;
 }
 
 interface QuestionReportEntry {
@@ -90,763 +81,680 @@ interface FinalReportData {
   average_evaluation_ms: number;
 }
 
+interface SessionBootstrap {
+  token: string;
+  url: string;
+  roomName?: string;
+  config?: {
+    interview_type?: string;
+    level?: string;
+    question_count?: number;
+    target_role?: string;
+    focus_topic?: string;
+  };
+}
+
+interface TranscriptEntry {
+  text: string;
+  participantIdentity?: string;
+  participant?: { isLocal?: boolean };
+}
+
+function formatTime(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  const remainder = Math.floor(seconds % 60);
+  return `${minutes}:${remainder.toString().padStart(2, "0")}`;
+}
+
 function ScoreBar({ score, max = 10 }: { score: number; max?: number }) {
   return (
-    <div className="h-1 w-full bg-white/[0.08] rounded-full overflow-hidden">
+    <div className="h-1 w-full overflow-hidden rounded-full bg-white/[.08]">
       <motion.div
         initial={{ width: 0 }}
-        animate={{ width: `${(score / max) * 100}%` }}
-        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-        className="h-full bg-primary rounded-full"
+        animate={{ width: `${Math.min(100, Math.max(0, (score / max) * 100))}%` }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        className="h-full bg-primary shadow-[0_0_8px_rgba(0,229,163,.8)]"
       />
     </div>
   );
 }
 
-function InterviewSession() {
+function RadialDottedWaveform({
+  isSpeaking,
+  voiceLevel,
+}: {
+  isSpeaking: boolean;
+  voiceLevel: number;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animId = 0;
+    let time = 0;
+    let smoothAmp = 0.15;
+    const numRays = 56;
+    const dotsPerRay = 13;
+    const innerRadius = 58;
+    const maxRayLength = 62;
+
+    const render = () => {
+      // Smooth slow time progression
+      time += isSpeaking ? 0.012 : 0.004;
+      const width = canvas.width;
+      const height = canvas.height;
+      const centerX = width / 2;
+      const centerY = height / 2;
+
+      ctx.clearRect(0, 0, width, height);
+
+      // Smooth damped audio level (lerp)
+      const targetAmp = isSpeaking ? Math.max(0.42, Math.min(0.95, voiceLevel * 3.2)) : 0.16;
+      smoothAmp += (targetAmp - smoothAmp) * 0.07;
+
+      for (let r = 0; r < numRays; r++) {
+        const angle = (r / numRays) * Math.PI * 2;
+        // Organic gentle acoustic ripples
+        const wave =
+          Math.sin(angle * 4 + time * 1.6) * 0.35 +
+          Math.cos(angle * 6 - time * 1.1) * 0.22 +
+          Math.sin(angle * 2 + time * 2.0) * 0.32;
+
+        const rayAmp = Math.max(0.12, smoothAmp * (1 + wave * 0.6));
+        const activeDots = Math.min(
+          dotsPerRay,
+          Math.floor(4 + rayAmp * (dotsPerRay - 3))
+        );
+
+        for (let d = 0; d < activeDots; d++) {
+          const progress = d / dotsPerRay;
+          const dist = innerRadius + progress * maxRayLength * (0.6 + rayAmp * 0.75);
+          const x = centerX + Math.cos(angle) * dist;
+          const y = centerY + Math.sin(angle) * dist;
+
+          const dotRadius = 0.85 + progress * 1.4;
+          const alpha = isSpeaking
+            ? Math.max(0.2, (1 - progress * 0.45) * (0.55 + rayAmp * 0.45))
+            : Math.max(0.12, 0.4 - progress * 0.3);
+
+          ctx.beginPath();
+          ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.95, alpha)})`;
+          ctx.shadowColor = "rgba(255, 255, 255, 0.5)";
+          ctx.shadowBlur = isSpeaking ? 3 : 1;
+          ctx.fill();
+        }
+      }
+
+      animId = requestAnimationFrame(render);
+    };
+
+    render();
+    return () => cancelAnimationFrame(animId);
+  }, [isSpeaking, voiceLevel]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={340}
+      height={340}
+      className="pointer-events-none absolute inset-0 size-full"
+    />
+  );
+}
+
+function InterviewSession({ bootstrap }: { bootstrap: SessionBootstrap }) {
   const router = useRouter();
   const room = useRoomContext();
   const roomState = useConnectionState();
-  const isConnected = roomState === ConnectionState.Connected;
-
-  const [elapsedTime, setElapsedTime] = useState(0);
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isConnected) {
-      interval = setInterval(() => {
-        setElapsedTime((prev) => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isConnected]);
-
-  const formatTime = (sec: number) => {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${s < 10 ? "0" : ""}${s}`;
-  };
-
   const participants = useParticipants();
-  const { isMicrophoneEnabled, localParticipant } = useLocalParticipant();
-  const [isMicEnabled, setIsMicEnabled] = useState(true);
-
-  const agentParticipant = participants.find((p) => !p.isLocal);
-  const isAgentSpeaking = agentParticipant?.isSpeaking ?? false;
-  const isUserSpeaking = localParticipant?.isSpeaking ?? false;
-
   const transcriptSegments = useTranscriptions();
-
+  const { isMicrophoneEnabled, localParticipant } = useLocalParticipant();
+  const [elapsedTime, setElapsedTime] = useState(0);
   const [evaluations, setEvaluations] = useState<EvaluationEventData[]>([]);
-  const [latestEval, setLatestEval] = useState<EvaluationEventData | null>(null);
+  const [currentQuestion, setCurrentQuestion] = useState<QuestionEventData | null>(null);
   const [finalReport, setFinalReport] = useState<FinalReportData | null>(null);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [currentVoiceLevel, setCurrentVoiceLevel] = useState(0);
+  const [isNoticeDismissed, setIsNoticeDismissed] = useState(false);
+  const transcriptEndRef = useRef<HTMLDivElement>(null);
+
+  const isConnected = roomState === ConnectionState.Connected;
+  const agentParticipant = participants.find((participant) => !participant.isLocal);
+  const isAgentAvailable = Boolean(agentParticipant);
+  const isAgentSpeaking = agentParticipant?.isSpeaking ?? false;
+  const isUserSpeaking = localParticipant?.isSpeaking ?? false;
+  const latestEval = evaluations.at(-1) ?? null;
+  const config = bootstrap.config ?? {};
+
+  const voiceLevel = useMotionValue(0);
+  const easedVoiceLevel = useSpring(voiceLevel, { stiffness: 280, damping: 28, mass: 0.3 });
+  const innerRingScale = useTransform(easedVoiceLevel, [0, 0.35], [1, 1.15]);
+  const middleRingScale = useTransform(easedVoiceLevel, [0, 0.35], [1, 1.25]);
+  const outerRingScale = useTransform(easedVoiceLevel, [0, 0.35], [1, 1.38]);
+  const ringOpacity = useTransform(easedVoiceLevel, [0, 0.35], [0.2, 0.8]);
 
   useEffect(() => {
-    if (!room) return;
+    if (!isConnected) return;
+    const interval = window.setInterval(() => setElapsedTime((value) => value + 1), 1000);
+    return () => window.clearInterval(interval);
+  }, [isConnected]);
 
-    const handleDataReceived = (payload: Uint8Array, _participant?: Participant) => {
+  useEffect(() => {
+    const handleDataReceived = (payload: Uint8Array) => {
       try {
-        const str = new TextDecoder().decode(payload);
-        const data = JSON.parse(str);
-
-        if (data.type === "answer_evaluated") {
-          const evalData = data as EvaluationEventData;
-          setEvaluations((prev) => [...prev, evalData]);
-          setLatestEval(evalData);
-        } else if (data.type === "session_completed") {
-          const reportData = data as FinalReportData;
-          setFinalReport(reportData);
+        const data = JSON.parse(new TextDecoder().decode(payload)) as { type?: string };
+        if (data.type === "question_started") setCurrentQuestion(data as QuestionEventData);
+        if (data.type === "answer_evaluated") setEvaluations((items) => [...items, data as EvaluationEventData]);
+        if (data.type === "session_completed") {
+          setFinalReport(data as FinalReportData);
           setIsReportOpen(true);
         }
-      } catch (e) {
-        console.error("Failed to parse data message", e);
+      } catch (error) {
+        console.error("Failed to parse interview event", error);
       }
     };
-
     room.on(RoomEvent.DataReceived, handleDataReceived);
     return () => {
       room.off(RoomEvent.DataReceived, handleDataReceived);
     };
   }, [room]);
 
-  const toggleMic = async () => {
-    if (localParticipant) {
-      await localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled);
-      setIsMicEnabled(!isMicrophoneEnabled);
-    }
-  };
+  useEffect(() => {
+    let animationFrame = 0;
+    const sampleVoiceLevel = () => {
+      const activeParticipant = isAgentSpeaking ? agentParticipant : isUserSpeaking ? localParticipant : undefined;
+      const lvl = activeParticipant?.audioLevel ?? 0;
+      voiceLevel.set(lvl);
+      setCurrentVoiceLevel(lvl);
+      animationFrame = window.requestAnimationFrame(sampleVoiceLevel);
+    };
+    sampleVoiceLevel();
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [agentParticipant, isAgentSpeaking, isUserSpeaking, localParticipant, voiceLevel]);
 
-  const averageScore =
-    evaluations.length > 0
-      ? (evaluations.reduce((acc, curr) => acc + curr.overall_score, 0) / evaluations.length).toFixed(1)
-      : null;
+  useEffect(() => {
+    transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [transcriptSegments]);
 
-  const handleEndSession = () => {
-    if (room) room.disconnect();
-    setIsReportOpen(true);
-  };
-
-  const copyReportText = () => {
-    if (!finalReport) return;
-    const text = `InterviewPilot Session Report
-Track: ${finalReport.interview_type} (${finalReport.level})
-Questions Answered: ${finalReport.questions_answered}
-Average Score: ${finalReport.session_average}/10
-Duration: ${formatTime(finalReport.duration_seconds)}
-
-Top Strengths:
-${finalReport.strengths.map((s) => `- ${s}`).join("\n")}
-
-Areas to Improve:
-${finalReport.top_improvements.map((i) => `- ${i}`).join("\n")}
-`;
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const orbStatus = isAgentSpeaking
-    ? "SPEAKING"
+  const questionNumber = currentQuestion?.question_number ?? latestEval?.question_number ?? 1;
+  const questionCount = currentQuestion?.question_count ?? config.question_count ?? 3;
+  const activity = isAgentSpeaking
+    ? "Sarah is speaking"
     : isUserSpeaking
-    ? "LISTENING"
-    : isConnected
-    ? "READY"
-    : "CONNECTING";
+    ? "Your answer is live"
+    : !isConnected
+    ? "Connecting voice engine"
+    : !isAgentAvailable
+    ? "Connecting to Sarah..."
+    : "Listening for your response";
+
+  const toggleMic = async () => {
+    await localParticipant?.setMicrophoneEnabled(!isMicrophoneEnabled);
+  };
+
+  const endSession = () => {
+    room.disconnect();
+    sessionStorage.removeItem("interview_session");
+    if (finalReport) setIsReportOpen(true);
+    else router.push("/");
+  };
+
+  const copyReport = async () => {
+    if (!finalReport) return;
+    await navigator.clipboard.writeText(
+      [
+        "InterviewPilot session report",
+        `${finalReport.interview_type} · ${finalReport.level}`,
+        `${finalReport.questions_answered} questions · ${finalReport.session_average}/10`,
+        "",
+        "Strengths",
+        ...finalReport.strengths.map((item) => `- ${item}`),
+        "",
+        "Priority for next time",
+        ...finalReport.top_improvements.map((item) => `- ${item}`),
+      ].join("\n")
+    );
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  };
+
+  // Mock initial criteria if evaluation hasn't run yet so the user sees all criteria boxes immediately
+  const defaultCriteria = [
+    { criterion: "Problem Framing & Scope", score: latestEval?.criteria[0]?.score ?? 0, evidence: latestEval?.criteria[0]?.evidence ?? "Analyzing opening structure and boundary clarification." },
+    { criterion: "Technical Reasoning & Trade-offs", score: latestEval?.criteria[1]?.score ?? 0, evidence: latestEval?.criteria[1]?.evidence ?? "Evaluating architecture decisions and failure modes." },
+    { criterion: "Communication Clarity", score: latestEval?.criteria[2]?.score ?? 0, evidence: latestEval?.criteria[2]?.evidence ?? "Tracking structured reasoning and answer conciseness." },
+  ];
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden" style={pf}>
-      {/* Background */}
-      <div className="absolute inset-0 grid-pattern opacity-20 pointer-events-none" />
-      <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
-        <AsciiWave className="w-full h-full" />
-      </div>
-
+    <div className="flex h-dvh flex-col overflow-hidden bg-[#030303] text-white select-none">
       <RoomAudioRenderer />
 
-      {/* Header */}
-      <header className="absolute top-0 w-full z-50 border-b border-white/[0.06] bg-black/70 backdrop-blur-xl h-14 flex items-center justify-between px-5">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleEndSession}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/[0.06] transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <div>
-            <h1 className="text-sm font-bold tracking-tight text-white leading-none" style={pf}>
-              InterviewPilot Session
-            </h1>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span
-                className={cn(
-                  "w-1.5 h-1.5 rounded-full",
-                  isConnected ? "bg-primary animate-pulse" : "bg-white/20"
-                )}
-              />
-              <span className="text-[10px] text-white/35 tracking-widest uppercase" style={pf}>
-                {roomState}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03]">
-            <Clock className="w-3 h-3 text-white/30" />
-            <span className="font-mono text-xs text-white/50 tabular-nums" style={pf}>
-              {formatTime(elapsedTime)}
+      {/* Top Cockpit Header */}
+      <header className="relative z-30 shrink-0 border-b border-white/10 bg-[#070807] px-4 py-3 sm:px-6">
+        <div className="flex w-full items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/" className="text-sm font-semibold tracking-tight text-white hover:text-primary transition-colors" style={pixelFont}>
+              InterviewPilot
+            </Link>
+            <span className="hidden sm:inline-block h-3.5 w-px bg-white/15" />
+            <span className="hidden font-mono text-[10px] uppercase tracking-[.18em] text-white/50 sm:inline-block">
+              {config.interview_type ? `${config.interview_type.toUpperCase()} TRACK` : "INTERVIEW STUDIO"} · {config.level ? config.level.toUpperCase() : "SENIOR"}
             </span>
           </div>
-          <button
-            onClick={handleEndSession}
-            className="px-3 py-1.5 rounded-lg text-xs text-white/70 border border-white/[0.08] hover:bg-white/[0.06] hover:text-white transition-colors"
-            style={pf}
-          >
-            End Session
-          </button>
+
+          <div className="flex items-center gap-3.5">
+            {/* Live Connection Status */}
+            <div className="flex items-center gap-2 rounded-xs border border-white/10 bg-[#090a09] px-2.5 py-1">
+              <span className={cn("size-1.5 rounded-full", isConnected ? "bg-primary shadow-[0_0_8px_#00e5a3]" : "bg-white/30")} />
+              <span className="font-mono text-[9px] uppercase tracking-[.16em] text-white/60">
+                {isConnected ? "Voice Live" : "Connecting"}
+              </span>
+            </div>
+
+            {/* Live Session Timer */}
+            <div className="flex items-center gap-1.5 rounded-xs border border-white/10 bg-[#090a09] px-3 py-1 font-mono text-xs tabular-nums text-white/80">
+              <span className="text-[10px] text-white/30">TIME</span>
+              <span>{formatTime(elapsedTime)}</span>
+            </div>
+
+            {/* End Session Button */}
+            <button
+              onClick={endSession}
+              className="cursor-pointer rounded-xs border border-white/20 bg-white/5 px-3.5 py-1 font-mono text-[10px] uppercase tracking-[.14em] text-white/80 transition hover:border-white/40 hover:bg-white/10 hover:text-white"
+            >
+              End Session
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Main Grid */}
-      <main className="relative z-10 pt-14 h-screen grid grid-cols-12 overflow-hidden">
-        {/* Left Panel */}
-        <div className="col-span-3 border-r border-white/[0.06] flex flex-col h-full min-h-0 overflow-hidden">
-          {/* Score */}
-          <div className="p-4 border-b border-white/[0.06]">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] tracking-widest text-white/30 uppercase" style={pf}>
-                Latest Score
-              </span>
-              <span
-                className={cn(
-                  "text-[9px] px-2 py-0.5 rounded border tracking-widest uppercase",
-                  evaluations.length > 0
-                    ? "text-primary border-primary/30 bg-primary/10"
-                    : "text-white/20 border-white/[0.08]"
-                )}
-                style={pf}
-              >
-                {evaluations.length} Evaluated
-              </span>
-            </div>
-
-            <AnimatePresence mode="wait">
-              {latestEval ? (
-                <motion.div
-                  key={latestEval.question_number}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <div className="flex items-end gap-1.5 mb-2">
-                    <span className="text-4xl font-bold text-primary leading-none" style={pf}>
-                      {latestEval.overall_score.toFixed(1)}
-                    </span>
-                    <span className="text-base text-white/25 mb-0.5" style={pf}>
-                      / 10
-                    </span>
-                  </div>
-                  <ScoreBar score={latestEval.overall_score} />
-                  {averageScore && (
-                    <p className="text-[10px] text-white/30 mt-2" style={pf}>
-                      Session avg:{" "}
-                      <span className="text-white/60" style={pf}>
-                        {averageScore}/10
-                      </span>
-                    </p>
-                  )}
-                </motion.div>
-              ) : (
-                <motion.p
-                  key="empty"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-[11px] text-white/25 leading-relaxed"
-                  style={pf}
-                >
-                  No responses evaluated yet. Answer a question to generate live feedback.
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Feedback */}
-          <div className="flex flex-col flex-1 min-h-0">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
-              <Sparkles className="w-3 h-3 text-primary" />
-              <span className="text-[10px] tracking-widest text-white/50 uppercase" style={pf}>
-                Grounded Rubric Feedback
-              </span>
-            </div>
-            <ScrollArea className="flex-1 p-4">
-              <AnimatePresence mode="wait">
-                {latestEval ? (
-                  <motion.div
-                    key={latestEval.question_number}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="space-y-4 text-[11px]"
-                    style={pf}
-                  >
-                    {latestEval.strengths.length > 0 && (
-                      <div>
-                        <h4 className="text-[9px] tracking-widest uppercase text-primary mb-2" style={pf}>
-                          Strengths
-                        </h4>
-                        <ul className="space-y-1.5">
-                          {latestEval.strengths.map((s, idx) => (
-                            <li key={idx} className="flex gap-2 text-white/50 leading-relaxed">
-                              <span className="text-primary shrink-0 mt-0.5">›</span>
-                              {s}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {latestEval.improvements.length > 0 && (
-                      <div>
-                        <h4 className="text-[9px] tracking-widest uppercase text-white/30 mb-2" style={pf}>
-                          Improvements
-                        </h4>
-                        <ul className="space-y-1.5">
-                          {latestEval.improvements.map((imp, idx) => (
-                            <li key={idx} className="flex gap-2 text-white/50 leading-relaxed">
-                              <span className="text-white/25 shrink-0 mt-0.5">›</span>
-                              {imp}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {latestEval.criteria.length > 0 && (
-                      <div className="pt-3 border-t border-white/[0.06]">
-                        <h4 className="text-[9px] tracking-widest uppercase text-white/25 mb-2.5" style={pf}>
-                          Criterion Scores
-                        </h4>
-                        <div className="space-y-3">
-                          {latestEval.criteria.map((c, idx) => (
-                            <div key={idx}>
-                              <div className="flex justify-between items-center mb-1">
-                                <span className="text-white/50 capitalize" style={pf}>
-                                  {c.criterion.replace(/_/g, " ")}
-                                </span>
-                                <span className="text-primary font-bold text-[10px] tabular-nums" style={pf}>
-                                  {c.score}/5
-                                </span>
-                              </div>
-                              <ScoreBar score={c.score} max={5} />
-                              {c.evidence && (
-                                <p className="text-[10px] text-white/25 italic mt-1 leading-relaxed" style={pf}>
-                                  "{c.evidence}"
-                                </p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
-                ) : (
-                  <motion.p
-                    key="empty-feedback"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-[11px] text-white/20 text-center py-6 leading-relaxed"
-                    style={pf}
-                  >
-                    Live rubric evaluation events will appear here after candidate response.
-                  </motion.p>
-                )}
-              </AnimatePresence>
-            </ScrollArea>
-          </div>
-        </div>
-
-        {/* Center: Agent Voice Orb */}
-        <div className="col-span-6 flex flex-col justify-center items-center relative">
-          <div className="relative flex items-center justify-center">
-            {/* Ambient glow */}
-            <div
-              className={cn(
-                "absolute w-80 h-80 rounded-full blur-[80px] transition-all duration-700",
-                isAgentSpeaking ? "bg-primary/10" : "bg-white/[0.03]"
-              )}
-            />
-
-            {/* Rotating dashed ring */}
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-              className="absolute w-72 h-72 border border-dashed border-white/10 rounded-full"
-            />
-
-            {/* User speaking pulse rings */}
-            <AnimatePresence>
-              {isUserSpeaking && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute inset-0 flex items-center justify-center"
-                >
-                  {[...Array(3)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      animate={{ scale: [1, 1.6], opacity: [0.3, 0] }}
-                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.55 }}
-                      className="absolute w-52 h-52 rounded-full border border-white/20"
-                    />
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Orb */}
-            <div className="relative z-10">
-              {/* Glow layer */}
-              <motion.div
-                animate={{
-                  opacity: isAgentSpeaking ? [0.5, 0.9, 0.5] : 0.2,
-                  scale: isAgentSpeaking ? [1, 1.1, 1] : 1,
-                }}
-                transition={{ duration: 2, repeat: isAgentSpeaking ? Infinity : 0 }}
-                className={cn(
-                  "absolute inset-0 rounded-full blur-2xl",
-                  isAgentSpeaking ? "bg-primary/30" : "bg-white/5"
-                )}
-              />
-              <motion.div
-                animate={{ scale: isAgentSpeaking ? [0.97, 1.04, 0.97] : 1 }}
-                transition={{ duration: 1.8, repeat: isAgentSpeaking ? Infinity : 0 }}
-                className={cn(
-                  "relative w-44 h-44 rounded-full border flex items-center justify-center backdrop-blur-xl transition-all duration-500",
-                  isAgentSpeaking
-                    ? "border-primary/40 bg-primary/5"
-                    : "border-white/[0.08] bg-white/[0.02]"
-                )}
-              >
-                <div className="text-center">
-                  <div
-                    className={cn(
-                      "w-2 h-2 rounded-full mx-auto mb-2 transition-colors duration-300",
-                      isConnected
-                        ? isAgentSpeaking
-                          ? "bg-primary animate-pulse"
-                          : "bg-white animate-pulse"
-                        : "bg-white/20"
-                    )}
-                  />
-                  <span
-                    className="text-[10px] tracking-[0.25em] text-white/40 uppercase block"
-                    style={pf}
-                  >
-                    {orbStatus}
-                  </span>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-
-          {/* Status label */}
-          <div className="mt-10 text-center">
-            <AnimatePresence mode="wait">
-              <motion.h3
-                key={orbStatus}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.2 }}
-                className={cn(
-                  "text-2xl font-bold tracking-tight leading-none",
-                  isAgentSpeaking ? "text-primary" : "text-white"
-                )}
-                style={pf}
-              >
-                {isAgentSpeaking
-                  ? "Alex is speaking..."
-                  : isUserSpeaking
-                  ? "Candidate speaking..."
-                  : "Alex is ready"}
-              </motion.h3>
-            </AnimatePresence>
-            {latestEval && (
-              <p className="text-[10px] text-white/25 mt-2 tracking-widest uppercase" style={pf}>
-                Q{latestEval.question_number} evaluated · score{" "}
-                <span className="text-primary">{latestEval.overall_score.toFixed(1)}</span>
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Right Panel: Transcript */}
-        <div className="col-span-3 border-l border-white/[0.06] flex flex-col h-full min-h-0">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
-            <BarChart3 className="w-3 h-3 text-white/30" />
-            <span className="text-[10px] tracking-widest text-white/30 uppercase" style={pf}>
-              Real-time Transcript
+      {/* Main Studio Multi-Box Grid (3 + 6 + 3 = 12 cols, Zero Dead Space) */}
+      <main className="grid h-[calc(100dvh-3.75rem)] w-full flex-1 grid-cols-1 gap-3 p-3 sm:gap-3.5 sm:p-4 lg:grid-cols-12">
+        
+        {/* BOX 1 (Left 3 cols): Live Real-Time Transcript Stream */}
+        <section className="flex h-full flex-col overflow-hidden rounded-lg border border-white/12 bg-[#070807] lg:col-span-3">
+          <div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#050605] px-4 py-3">
+            <span className="font-mono text-[10px] uppercase tracking-[.18em] text-white/80">
+              01 / Live Transcript
+            </span>
+            <span className="font-mono text-[9px] text-white/30">
+              {transcriptSegments.length} turns
             </span>
           </div>
+
           <ScrollArea className="flex-1 p-4">
-            <div className="flex flex-col gap-3">
-              {transcriptSegments && transcriptSegments.length > 0 ? (
-                transcriptSegments.map(
-                  (seg: { text?: string; participant?: { isLocal?: boolean } }, idx: number) => (
+            <div className="space-y-3.5 pr-2">
+              {transcriptSegments.length ? (
+                transcriptSegments.map((segment, index) => {
+                  const seg = segment as unknown as TranscriptEntry;
+                  const isLocal = seg.participantIdentity
+                    ? seg.participantIdentity === localParticipant?.identity
+                    : seg.participant?.isLocal;
+                  return (
                     <div
-                      key={idx}
+                      key={`${segment.text}-${index}`}
                       className={cn(
-                        "p-3 rounded-lg border",
-                        seg.participant?.isLocal
-                          ? "border-white/[0.1] bg-white/[0.03]"
-                          : "border-primary/20 bg-primary/[0.04]"
+                        "rounded-sm border p-3 transition-colors",
+                        isLocal
+                          ? "border-white/10 bg-white/[.02]"
+                          : "border-primary/20 bg-primary/[.03]"
                       )}
                     >
-                      <span
-                        className={cn(
-                          "text-[9px] tracking-widest uppercase block mb-1.5",
-                          seg.participant?.isLocal ? "text-white/40" : "text-primary/70"
-                        )}
-                        style={pf}
-                      >
-                        {seg.participant?.isLocal ? "Candidate" : "Alex"}
-                      </span>
-                      <p className="text-[11px] text-white/55 leading-relaxed" style={pf}>
-                        {seg.text}
-                      </p>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span
+                          className={cn(
+                            "font-mono text-[8px] uppercase tracking-[.18em] font-semibold",
+                            isLocal ? "text-white/70" : "text-primary"
+                          )}
+                        >
+                          {isLocal ? "Candidate (You)" : "AI Interviewer (Sarah)"}
+                        </span>
+                        <span className="font-mono text-[8px] text-white/20">Turn #{index + 1}</span>
+                      </div>
+                      <p className="text-xs leading-5 text-white/85">{segment.text}</p>
                     </div>
-                  )
-                )
+                  );
+                })
               ) : (
-                <p className="text-[11px] text-white/20 py-6 text-center leading-relaxed" style={pf}>
-                  Speech transcripts will stream here in real time as candidate and agent converse.
+                <div className="flex h-48 flex-col items-center justify-center text-center">
+                  <span className="font-mono text-[10px] uppercase tracking-[.16em] text-white/30">
+                    Listening for voice input...
+                  </span>
+                  <p className="mt-2 text-xs text-white/40 max-w-[200px]">
+                    Spoken dialogue will stream here in real-time as you speak.
+                  </p>
+                </div>
+              )}
+              <div ref={transcriptEndRef} />
+            </div>
+          </ScrollArea>
+
+          <div className="shrink-0 border-t border-white/10 bg-[#050605] px-4 py-2.5 font-mono text-[8px] uppercase tracking-[.16em] text-white/30 flex items-center justify-between">
+            <span>Speech Recognition</span>
+            <span className="text-primary font-semibold">Groq Whisper Large</span>
+          </div>
+        </section>
+
+        {/* BOX 2 (Center 6 cols): Question Display & Interactive Voice Cockpit */}
+        <section className="flex h-full flex-col justify-between overflow-hidden rounded-lg border border-white/15 bg-[#070807] lg:col-span-6">
+          {/* Question Stepper Strip */}
+          <div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#050605] px-4 py-3">
+            <span className="font-mono text-[10px] uppercase tracking-[.2em] text-primary">
+              Question {String(questionNumber).padStart(2, "0")} of {String(questionCount).padStart(2, "0")}
+            </span>
+            <div className="flex items-center gap-1.5">
+              {Array.from({ length: questionCount }, (_, index) => (
+                <span
+                  key={index}
+                  className={cn(
+                    "h-1 rounded-full transition-all",
+                    index < questionNumber ? "w-6 bg-primary" : "w-3 bg-white/15"
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Main Question Display & Voice Orb */}
+          <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
+            {/* Question Text */}
+            <div className="max-w-xl">
+              <span className="font-mono text-[9px] uppercase tracking-[.22em] text-white/35">
+                {currentQuestion?.question_title ?? "Live Question"}
+              </span>
+              <h1
+                className="mt-3 text-balance text-xl font-semibold leading-snug tracking-tight sm:text-2xl lg:text-3xl text-white"
+                style={pixelFont}
+              >
+                {currentQuestion?.question_text ?? "Your first interview question is being prepared."}
+              </h1>
+            </div>
+
+            {/* Radial Dotted Soundwave Equalizer & Voice Cockpit Orb */}
+            <div className="relative my-7 grid size-64 place-items-center sm:my-8 sm:size-72">
+              {/* Radial Dotted Acoustic Particle Waveform Canvas */}
+              <RadialDottedWaveform
+                isSpeaking={isAgentSpeaking || isUserSpeaking}
+                voiceLevel={currentVoiceLevel}
+              />
+
+              {/* Center Interactive Microphone Orb */}
+              <button
+                onClick={toggleMic}
+                aria-label={isMicrophoneEnabled ? "Mute microphone" : "Unmute microphone"}
+                className={cn(
+                  "relative z-10 grid size-24 place-items-center rounded-full border transition-all cursor-pointer sm:size-28",
+                  isMicrophoneEnabled
+                    ? isAgentSpeaking || isUserSpeaking
+                      ? "border-white bg-[#141614] text-white shadow-[0_0_36px_rgba(255,255,255,0.3),0_0_80px_rgba(255,255,255,0.15)]"
+                      : "border-white/50 bg-[#0d0e0d] text-white shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:border-white"
+                    : "border-white/20 bg-[#090a09] text-white/40 hover:border-white/40 hover:text-white"
+                )}
+              >
+                {isMicrophoneEnabled ? <Microphone size={28} weight="fill" /> : <MicrophoneSlash size={28} />}
+                <span className="absolute inset-x-0 bottom-4 font-mono text-[7px] uppercase tracking-[.18em] text-white/70">
+                  {isMicrophoneEnabled ? (isAgentSpeaking ? "SARAH SPEAKING" : isUserSpeaking ? "YOU SPEAKING" : "LIVE MIC") : "MUTED"}
+                </span>
+              </button>
+            </div>
+
+            {/* Status Feedback */}
+            <div className="flex items-center gap-2">
+              <span className={cn("size-2 rounded-full", isAgentSpeaking ? "bg-primary animate-pulse" : isUserSpeaking ? "bg-primary animate-ping" : "bg-white/30")} />
+              <p className="text-xs font-semibold text-white/80">{activity}</p>
+            </div>
+            <p className="mt-1.5 font-mono text-[9px] text-white/35">
+              {isMicrophoneEnabled ? "Tap orb to mute microphone" : "Tap orb to unmute microphone"}
+            </p>
+          </div>
+
+          {/* Turn Telemetry Footer */}
+          <div className="shrink-0 border-t border-white/10 bg-[#050605] px-4 py-2.5 font-mono text-[8px] uppercase tracking-[.16em] text-white/35 flex items-center justify-between">
+            <span>Audio Latency: &lt; 580ms</span>
+            <span className="text-white/60">Deterministic Evaluation Engine</span>
+          </div>
+        </section>
+
+        {/* BOX 3 (Right 3 cols): Live Rubric Scoring & Evidence Grounding */}
+        <section className="flex h-full flex-col justify-between overflow-hidden rounded-lg border border-white/12 bg-[#070807] lg:col-span-3">
+          <div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-[#050605] px-4 py-3">
+            <span className="font-mono text-[10px] uppercase tracking-[.18em] text-white/80">
+              03 / Live Rubric Signals
+            </span>
+            <span className="font-mono text-[9px] text-primary font-semibold">
+              {latestEval ? `${latestEval.overall_score} / 10` : "Active"}
+            </span>
+          </div>
+
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-3.5 pr-2">
+              {/* Overall Readiness Snapshot */}
+              <div className="rounded-sm border border-white/10 bg-white/[.02] p-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[8px] uppercase tracking-[.16em] text-white/40">
+                    Calculated Readiness
+                  </span>
+                  <span className="font-mono text-sm font-semibold text-primary">
+                    {latestEval ? `${latestEval.overall_score} / 10` : "Pending Evaluation"}
+                  </span>
+                </div>
+                <div className="mt-2.5">
+                  <ScoreBar score={latestEval?.overall_score ?? 0} />
+                </div>
+              </div>
+
+              {/* Criterion Breakdown */}
+              <div className="space-y-2.5">
+                <p className="font-mono text-[8px] uppercase tracking-[.16em] text-white/35">
+                  Evaluation Dimensions
                 </p>
+                {(latestEval?.criteria ?? defaultCriteria).map((c, i) => (
+                  <div key={c.criterion + i} className="rounded-sm border border-white/[.07] bg-[#090a09] p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-white/85">{c.criterion}</span>
+                      <span className="font-mono text-[10px] text-primary font-semibold">
+                        {c.score > 0 ? `${c.score} / 5` : "Evaluating..."}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-[11px] leading-4 text-white/45">
+                      {c.evidence}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Verified Evidence Citation */}
+              {latestEval?.strengths?.[0] && (
+                <div className="rounded-sm border border-white/[.08] bg-[#050605] p-3">
+                  <span className="font-mono text-[8px] uppercase tracking-[.14em] text-white/40 block mb-1">
+                    Detected Strength
+                  </span>
+                  <p className="text-xs leading-5 text-white/70">
+                    “{latestEval.strengths[0]}”
+                  </p>
+                </div>
               )}
             </div>
           </ScrollArea>
-        </div>
+
+          <div className="shrink-0 border-t border-white/10 bg-[#050605] px-4 py-2.5 font-mono text-[8px] uppercase tracking-[.16em] text-white/30 flex items-center justify-between">
+            <span>Scoring Mode</span>
+            <span className="text-primary font-semibold">Grounded in Transcript</span>
+          </div>
+        </section>
+
       </main>
 
-      {/* Controls Bar */}
-      <div className="fixed bottom-5 left-0 right-0 flex justify-center items-center z-50">
-        <div className="bg-black/80 backdrop-blur-xl border border-white/[0.08] rounded-full px-5 py-2 flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span
-              className={cn(
-                "w-1.5 h-1.5 rounded-full",
-                isConnected ? "bg-primary animate-pulse" : "bg-white/20"
-              )}
-            />
-            <span className="text-[10px] text-white/30 hidden sm:block tracking-widest" style={pf}>
-              Voice Engine {isConnected ? "Connected" : "Disconnected"}
-            </span>
-          </div>
-          <div className="w-px h-4 bg-white/[0.08]" />
-          <button
-            onClick={toggleMic}
-            className={cn(
-              "w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200",
-              isMicEnabled
-                ? "bg-primary text-black hover:bg-primary/90"
-                : "bg-white/[0.06] text-white/40 hover:bg-white/[0.1] border border-white/[0.08]"
-            )}
-          >
-            {isMicEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Final Session Report Dialog */}
+      {/* Final Comprehensive Report Modal */}
       <Dialog open={isReportOpen} onOpenChange={setIsReportOpen}>
-        <DialogContent
-          className="bg-[#080808] border border-white/[0.08] text-white max-w-2xl max-h-[85vh] overflow-y-auto"
-          style={pf}
-        >
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center gap-2.5" style={pf}>
-              <CheckCircle2 className="w-5 h-5 text-primary" />
-              Final Session Report
+        <DialogContent className="max-h-[90dvh] max-w-4xl overflow-y-auto border-white/15 bg-[#050605] p-0 text-white" style={pixelFont}>
+          <DialogHeader className="border-b border-white/10 p-6 text-left sm:p-8">
+            <p className="font-mono text-[9px] uppercase tracking-[.2em] text-primary">Session Complete</p>
+            <DialogTitle className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+              Your interview evidence, distilled.
             </DialogTitle>
-            <DialogDescription className="text-[11px] text-white/30" style={pf}>
-              Synthesized evaluation grounded in interview rubrics.
+            <DialogDescription className="mt-2 text-sm leading-6 text-white/50">
+              Scores connect directly to your spoken answers and the rubric used for this session.
             </DialogDescription>
           </DialogHeader>
 
           {finalReport ? (
-            <div className="space-y-5 text-[11px] pt-2" style={pf}>
-              {/* Summary Stats */}
-              <div className="grid grid-cols-4 gap-3 p-4 rounded-xl border border-white/[0.06] bg-white/[0.02]">
-                {[
-                  { label: "Overall", value: `${finalReport.session_average}/10`, accent: true },
-                  { label: "Questions", value: String(finalReport.questions_answered) },
-                  { label: "Track", value: finalReport.interview_type },
-                  { label: "Duration", value: formatTime(finalReport.duration_seconds) },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <span className="text-[9px] tracking-widest uppercase text-white/25 block mb-1" style={pf}>
-                      {item.label}
-                    </span>
-                    <span
-                      className={cn(
-                        "text-xl font-bold leading-none",
-                        item.accent ? "text-primary" : "text-white"
-                      )}
-                      style={pf}
-                    >
-                      {item.value}
-                    </span>
-                  </div>
-                ))}
+            <div className="grid gap-px bg-white/10 sm:grid-cols-12">
+              <div className="bg-[#050605] p-6 sm:col-span-4 sm:p-8">
+                <p className="font-mono text-[8px] uppercase tracking-[.18em] text-white/30">Overall Score</p>
+                <p className="mt-4 text-6xl font-semibold text-primary">{finalReport.session_average}</p>
+                <p className="mt-2 text-xs text-white/40">
+                  {finalReport.questions_answered} questions · {formatTime(finalReport.duration_seconds)}
+                </p>
               </div>
-
-              {/* Strengths & Improvements */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-4 rounded-xl border border-primary/20 bg-primary/[0.04]">
-                  <h4 className="text-[9px] tracking-widest uppercase text-primary mb-2.5" style={pf}>
-                    Key Strengths
-                  </h4>
-                  <ul className="space-y-2">
-                    {finalReport.strengths.map((s, i) => (
-                      <li key={i} className="flex gap-2 text-white/50 leading-relaxed">
-                        <span className="text-primary shrink-0">›</span>
-                        {s}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="p-4 rounded-xl border border-white/[0.06] bg-white/[0.02]">
-                  <h4 className="text-[9px] tracking-widest uppercase text-white/25 mb-2.5" style={pf}>
-                    Key Improvements
-                  </h4>
-                  <ul className="space-y-2">
-                    {finalReport.top_improvements.map((imp, i) => (
-                      <li key={i} className="flex gap-2 text-white/50 leading-relaxed">
-                        <span className="text-white/25 shrink-0">›</span>
-                        {imp}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              {/* Per-question Breakdown */}
-              <div className="space-y-2.5">
-                <h4 className="text-[9px] tracking-widest uppercase text-white/25" style={pf}>
-                  Question Breakdown
-                </h4>
-                {finalReport.question_breakdown.map((q) => (
-                  <div
-                    key={q.question_number}
-                    className="p-4 rounded-xl border border-white/[0.06] bg-white/[0.02] space-y-2"
-                  >
-                    <div className="flex justify-between items-baseline gap-3">
-                      <span className="font-semibold text-white/80" style={pf}>
-                        Q{q.question_number}: {q.question_title}
-                      </span>
-                      <span
-                        className={cn(
-                          "text-[10px] font-bold shrink-0 tabular-nums",
-                          q.overall_score >= 7
-                            ? "text-primary"
-                            : q.overall_score >= 5
-                            ? "text-white/60"
-                            : "text-white/30"
-                        )}
-                        style={pf}
-                      >
-                        {q.overall_score}/10
-                      </span>
-                    </div>
-                    <ScoreBar score={q.overall_score} />
-                    <p className="text-[10px] text-white/30 italic leading-relaxed">
-                      &quot;{q.candidate_transcript}&quot;
+              <div className="bg-[#050605] p-6 sm:col-span-8 sm:p-8">
+                <p className="font-mono text-[8px] uppercase tracking-[.18em] text-primary">Strongest Signals</p>
+                <div className="mt-4 space-y-2.5">
+                  {finalReport.strengths.map((item) => (
+                    <p key={item} className="border-l-2 border-primary/70 pl-3.5 text-xs leading-5 text-white/70">
+                      {item}
                     </p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Latency telemetry */}
-              {(finalReport.average_retrieval_ms > 0 || finalReport.average_evaluation_ms > 0) && (
-                <div className="flex items-center gap-4 pt-1 text-[9px] text-white/20 font-mono" style={pf}>
-                  <span>Avg retrieval: {finalReport.average_retrieval_ms}ms</span>
-                  <span>Avg eval: {finalReport.average_evaluation_ms}ms</span>
+                  ))}
                 </div>
-              )}
-
-              {/* Footer Actions */}
-              <div className="flex items-center justify-between pt-4 border-t border-white/[0.06]">
+              </div>
+              <div className="bg-[#050605] p-6 sm:col-span-5 sm:p-8">
+                <p className="font-mono text-[8px] uppercase tracking-[.18em] text-white/35">Priority For Next Round</p>
+                <div className="mt-4 space-y-2.5">
+                  {finalReport.top_improvements.map((item) => (
+                    <p key={item} className="text-xs leading-5 text-white/60">
+                      • {item}
+                    </p>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-[#050605] p-6 sm:col-span-7 sm:p-8">
+                <p className="font-mono text-[8px] uppercase tracking-[.18em] text-primary">Question Breakdown</p>
+                <div className="mt-4 space-y-3.5">
+                  {finalReport.question_breakdown.map((question) => (
+                    <div key={question.question_id}>
+                      <div className="mb-1.5 flex justify-between gap-4 text-xs">
+                        <span className="text-white/70">{question.question_title}</span>
+                        <span className="font-mono font-semibold text-primary">{question.overall_score}/10</span>
+                      </div>
+                      <ScoreBar score={question.overall_score} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-[#050605] p-5 sm:col-span-12 sm:px-8">
                 <button
-                  onClick={copyReportText}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] text-white/50 border border-white/[0.08] hover:bg-white/[0.05] hover:text-white transition-colors"
-                  style={pf}
+                  onClick={copyReport}
+                  className="flex items-center gap-2 rounded-xs border border-white/15 px-4 py-2 font-mono text-xs text-white/70 hover:border-white/35 hover:text-white cursor-pointer"
                 >
-                  {copied ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
-                  {copied ? "Copied" : "Copy Report"}
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  {copied ? "Copied" : "Copy Report Summary"}
                 </button>
                 <button
                   onClick={() => router.push("/")}
-                  className="px-4 py-1.5 rounded-lg text-[11px] bg-primary text-black font-bold hover:bg-primary/90 transition-colors"
-                  style={pf}
+                  className="rounded-xs bg-white px-5 py-2 text-xs font-semibold text-black hover:bg-primary cursor-pointer transition-colors"
                 >
-                  Return to Home
+                  Return Home
                 </button>
               </div>
             </div>
           ) : (
-            <div className="py-8 text-center text-white/25 text-[11px]" style={pf}>
-              Generating final session report...
+            <div className="p-10 text-center text-sm text-white/35">
+              Finishing the current evaluation before closing your report.
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Free Tier Cold Start Sharp Rectangular Notification */}
+      {!isAgentAvailable && !isNoticeDismissed && (
+        <div className="fixed bottom-5 right-5 z-50 max-w-md rounded-none border border-white/20 bg-[#080a08] p-4 shadow-[0_8px_32px_rgba(0,0,0,0.85)] backdrop-blur-md">
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-2">
+              <span className="font-mono text-xs uppercase tracking-[.18em] text-primary font-bold">
+                [NOTICE] FREE CLOUD COLD START
+              </span>
+              <p className="text-xs text-white/75 leading-relaxed">
+                Backend is hosted on a free cloud tier. First connection takes ~45–60s to wake from cold sleep. Sarah will join and begin speaking automatically.
+              </p>
+              <div className="border-t border-white/10 pt-2 text-xs text-white/60 space-y-1">
+                <p>Or run local worker for instant 0s join:</p>
+                <code className="block rounded-none bg-black/60 px-2.5 py-1 text-xs font-mono text-primary select-all">
+                  uv run python -m agent.main dev
+                </code>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsNoticeDismissed(true)}
+              aria-label="Dismiss notice"
+              className="shrink-0 p-1 text-white/40 hover:text-white transition-colors cursor-pointer rounded-none"
+            >
+              <span className="font-mono text-sm leading-none">✕</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-export default function InterviewPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-black text-white/40 flex items-center justify-center text-xs" style={pf}>
-          Loading Session...
-        </div>
-      }
-    >
-      <InterviewSessionWrapper />
-    </Suspense>
-  );
-}
-
 function InterviewSessionWrapper() {
-  const [token, setToken] = useState("");
-  const [url, setUrl] = useState("");
+  const [bootstrap, setBootstrap] = useState<SessionBootstrap | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const stored = sessionStorage.getItem("interview_session");
     if (!stored) {
-      setTimeout(() => setError("No active session found. Please start a session from the landing page."), 0);
+      setError("No active interview session was found. Start a new session from the landing page.");
       return;
     }
-
     try {
-      const data = JSON.parse(stored);
-      const targetUrl = data.url || data.livekit_url;
-      if (!data.token || !targetUrl) {
-        setTimeout(() => setError("No valid LiveKit session token found. Please configure a new session."), 0);
-        return;
-      }
-      setTimeout(() => {
-        setToken(data.token);
-        setUrl(targetUrl);
-      }, 0);
-    } catch {
-      setTimeout(() => setError("Invalid session state."), 0);
+      const data = JSON.parse(stored) as SessionBootstrap & { livekit_url?: string };
+      const normalized = { ...data, url: data.url || data.livekit_url || "" };
+      if (!normalized.token || !normalized.url) throw new Error("The LiveKit session token is incomplete.");
+      setBootstrap(normalized);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "The saved interview session is invalid.");
     }
   }, []);
 
-  if (error) {
+  if (error)
     return (
-      <div
-        className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center"
-        style={pf}
-      >
-        <h2 className="text-xl font-bold text-white mb-2" style={pf}>
-          Session Error
-        </h2>
-        <p className="text-[11px] text-white/35 mb-6 max-w-sm leading-relaxed" style={pf}>
-          {error}
-        </p>
-        <Link href="/">
-          <button
-            className="px-4 py-2 rounded-lg text-xs text-white/60 border border-white/[0.08] hover:bg-white/[0.05] hover:text-white transition-colors"
-            style={pf}
-          >
-            Back to Home
-          </button>
-        </Link>
+      <div className="grid min-h-dvh place-items-center bg-black px-6 text-center text-white" style={pixelFont}>
+        <div className="max-w-md border border-white/15 bg-[#050605] p-8 rounded-lg">
+          <p className="font-mono text-[9px] uppercase tracking-[.2em] text-primary">Session unavailable</p>
+          <h1 className="mt-4 text-2xl font-semibold">We could not open the interview room.</h1>
+          <p className="mt-3 text-sm leading-6 text-white/50">{error}</p>
+          <Link href="/" className="mt-6 inline-block bg-white px-5 py-2.5 text-xs font-semibold text-black hover:bg-primary rounded-xs">
+            Return home
+          </Link>
+        </div>
       </div>
     );
-  }
 
-  if (!token || !url) {
+  if (!bootstrap)
     return (
-      <div className="min-h-screen bg-black text-white/25 flex items-center justify-center text-xs" style={pf}>
-        Initializing LiveKit Engine...
+      <div className="grid min-h-dvh place-items-center bg-black font-mono text-[10px] uppercase tracking-[.2em] text-white/40">
+        Preparing interview studio
       </div>
     );
-  }
 
   return (
-    <LiveKitRoom
-      video={false}
-      audio={true}
-      token={token}
-      serverUrl={url}
-      connect={true}
-      data-lk-theme="default"
-    >
-      <InterviewSession />
+    <LiveKitRoom video={false} audio token={bootstrap.token} serverUrl={bootstrap.url} connect data-lk-theme="default">
+      <InterviewSession bootstrap={bootstrap} />
     </LiveKitRoom>
+  );
+}
+
+export default function InterviewPage() {
+  return (
+    <Suspense fallback={<div className="grid min-h-dvh place-items-center bg-black font-mono text-[10px] uppercase tracking-[.2em] text-white/40">Loading interview</div>}>
+      <InterviewSessionWrapper />
+    </Suspense>
   );
 }

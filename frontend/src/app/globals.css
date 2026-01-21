@@ -121,6 +121,53 @@
       linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
     background-size: 60px 60px;
   }
+
+  .scales-pattern {
+    background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, .035) 0, rgba(255, 255, 255, .035) 1px, transparent 1px, transparent 9px);
+    mask-image: linear-gradient(to bottom, transparent, black 18%, black 82%, transparent);
+  }
+
+  .interactive-glow {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .interactive-glow::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    border-radius: inherit;
+    background: radial-gradient(240px circle at var(--glow-x, 50%) var(--glow-y, 50%), rgba(0, 229, 163, 0.5), transparent 65%);
+    opacity: 0;
+    transition: opacity 250ms ease;
+  }
+
+  .interactive-glow:hover::before,
+  .interactive-glow:focus-within::before {
+    opacity: 1;
+  }
+
+  .section-rails::before,
+  .section-rails::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    z-index: 1;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.075);
+    pointer-events: none;
+  }
+
+  .section-rails::before {
+    left: max(1.25rem, calc(50% - 40rem));
+  }
+
+  .section-rails::after {
+    right: max(1.25rem, calc(50% - 40rem));
+  }
+
+
 }
 
 @keyframes progress {
